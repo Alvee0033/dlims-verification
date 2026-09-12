@@ -26,6 +26,7 @@ export default function Home() {
   const [searchValue, setSearchValue] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,10 +44,22 @@ export default function Home() {
     setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
   };
 
+  const handleReset = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setResult(null);
+    setNotFound(false);
+    setVerifyError(null);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const performVerification = async (method: string, value: string) => {
     if (!value || !value.trim()) return;
     setIsVerifying(true);
     setVerifyError(null);
+    setNotFound(false);
 
     try {
       const res = await fetch('/api/verify', {
@@ -57,13 +70,16 @@ export default function Home() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setVerifyError(
-          data.message || 'No driving licence record found matching the provided details.'
-        );
+        setNotFound(true);
+        setResult(null);
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         return;
       }
 
       setResult(data.result);
+      setNotFound(false);
       if (typeof window !== 'undefined') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -126,31 +142,37 @@ export default function Home() {
       {/* Modern Navbar */}
       <nav className="navbar navbar-expand-lg navbar-light">
         <div className="container d-flex justify-content-between align-items-center">
-          <a className="navbar-brand" href="/">
+          <a
+            className="navbar-brand"
+            href="/"
+            onClick={(e) => {
+              if (result || notFound) {
+                handleReset(e);
+              }
+            }}
+          >
             <div className="logo-icon">
               <i className="fas fa-id-card"></i>
             </div>
             <span>DLIMS Verification</span>
           </a>
           <div className="d-flex align-items-center gap-2">
-            <a
-              href="/admin"
-              className="btn btn-sm btn-outline-success border-0 px-2 py-1 small fw-semibold text-decoration-none"
-              style={{ fontSize: '0.82rem', color: '#0f4c3a' }}
-              title="Official DLIMS Admin Panel"
-            >
-              <i className="fas fa-lock me-1"></i>
-              <span className="d-none d-sm-inline">Admin Portal</span>
-            </a>
-            {result && (
+            {!result && !notFound && (
+              <a
+                href="/admin"
+                className="btn btn-sm btn-outline-success border-0 px-2 py-1 small fw-semibold text-decoration-none"
+                style={{ fontSize: '0.82rem', color: '#0f4c3a' }}
+                title="Official DLIMS Admin Panel"
+              >
+                <i className="fas fa-lock me-1"></i>
+                <span className="d-none d-sm-inline">Admin Portal</span>
+              </a>
+            )}
+            {(result || notFound) && (
               <a
                 href="#"
                 className="back-button text-dark"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setResult(null);
-                  setVerifyError(null);
-                }}
+                onClick={handleReset}
               >
                 <i className="fas fa-arrow-left"></i>
                 Back
@@ -196,8 +218,8 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Main Content: Form or Sleek Verification Results Panel */}
-      {!result ? (
+      {/* Main Content: Form or Sleek Verification Results Panel or Not Found Panel */}
+      {!result && !notFound ? (
         <>
           {/* Verification Panel */}
           <div className="container px-4">
@@ -362,6 +384,24 @@ export default function Home() {
             </div>
           </section>
         </>
+      ) : notFound ? (
+        /* EXACT NO MATCHING DATA FOUND CARD FROM LIVE SOURCE */
+        <div className="container px-4">
+          <div className="verification-result">
+            <div className="panel-header">
+              <h3 className="text-white mb-0">
+                <i className="fas fa-id-card me-2"></i>
+                License Details
+              </h3>
+            </div>
+            <div className="card-body p-4 bg-white">
+              <div className="alert-no-data">
+                <i className="fas fa-triangle-exclamation alert-no-data-icon"></i>
+                <span className="alert-no-data-text">No matching data found.</span>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         /* EXACT SLEEK VERIFICATION RESULTS PANEL FROM LIVE SOURCE */
         <div className="container px-4">

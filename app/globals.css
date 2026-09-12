@@ -403,6 +403,32 @@ body {
     word-break: break-word;
 }
 
+/* =========================================================
+   EXACT 'NO MATCHING DATA FOUND' ALERT
+   ========================================================= */
+.alert-no-data {
+    background-color: #fef3c7;
+    border-radius: 10px;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.alert-no-data-icon {
+    color: #92400e;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.alert-no-data-text {
+    color: #92400e;
+    font-size: 0.96rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
 /* =====================
    FEATURES SECTION
    ===================== */
