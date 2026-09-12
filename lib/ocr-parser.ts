@@ -35,10 +35,11 @@ export function parseOcrText(rawText: string): ParsedLicenseData {
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
 
-  // Normalise noise from Tesseract (pipes, backslashes, Urdu diacritics)
+  // Normalise noise from Tesseract (pipes, backslashes, Urdu diacritics, curly quotes)
   const cleanText = rawText
     .replace(/[|\\]/g, ' ')
     .replace(/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, ' ')
+    .replace(/[\u2018\u2019\u201C\u201D`'"]/g, ' ')
     .replace(/\s+/g, ' ');
 
   const extracted: Record<string, string> = {};
@@ -229,15 +230,15 @@ export function parseOcrText(rawText: string): ParsedLicenseData {
     }
   }
 
-  // Heuristic: "distt <Word>" or merged "disttDeraGhazi" (OCR sometimes merges distt+name)
+  // Heuristic: "distt/disti <Word>" or merged "disttDeraGhazi" (OCR sometimes merges distt+name or reads disti)
   if (!extracted.district) {
-    // Try merged form: "disttWord" with no space
-    const mergedDistt = cleanText.match(/distt([A-Za-z][A-Za-z\s]{1,20}?)(?=[^A-Za-z]|$)/i);
+    // Try merged form: "disttWord" or "distiWord" with no space
+    const mergedDistt = cleanText.match(/dist[ti]([A-Za-z][A-Za-z\s]{1,20}?)(?=[^A-Za-z]|$)/i);
     if (mergedDistt) {
       extracted.district = toTitleCase(mergedDistt[1].trim());
     } else {
-      // Try spaced form: "distt Word"
-      const spacedDistt = cleanText.match(/distt\s+([A-Za-z][A-Za-z\s]{2,24}?)(?=\s*(?:pakistan|$|\n))/i);
+      // Try spaced form: "distt Word" or "disti Word"
+      const spacedDistt = cleanText.match(/dist[ti]\s+([A-Za-z][A-Za-z\s]{2,24}?)(?=\s*(?:pakistan|$|\n))/i);
       if (spacedDistt) {
         extracted.district = toTitleCase(spacedDistt[1].replace(/[^A-Za-z\s]/g, '').trim());
       }
