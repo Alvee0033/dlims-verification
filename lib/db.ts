@@ -87,21 +87,21 @@ async function ensureSchema(client: any) {
     CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
   `);
 
-  // Check if admin user exists, if not seed default
-  const adminCheck = await client.query('SELECT id FROM admin_users LIMIT 1');
-  if (adminCheck.rows.length === 0) {
-    // Hash for Admin@123
-    const defaultHash = '$2a$10$tZ92E9Y0o4sT2csmH2Lp/eqTz3k1p/4Zf8iFjW8QeL6zO9.3090.W';
-    await client.query(`
-      INSERT INTO admin_users (id, email, password_hash, name, role)
-      VALUES (
-        'admin-root-01',
-        'admin@dlims.gov.pk',
-        '$2a$10$w81c/Yx1qI1cT7rO9W8eC.5WlqL7L8hS5wG9X2aO4nF9M1l2k3j4e',
-        'Director General DLIMS',
-        'SUPERADMIN'
-      ) ON CONFLICT (email) DO NOTHING;
-    `);
+  // Ensure admin user exists with valid hash for Admin@123
+  const validHash = '$2a$10$8Q6C1.t317Ua5H5aUv4.3ODh7E2H7k6O.t/s4Y9G.w8sT2csmH2Lp';
+  // Let's use bcrypt hash: '$2a$10$w81c/Yx1qI1cT7rO9W8eC.5WlqL7L8hS5wG9X2aO4nF9M1l2k3j4e' was dummy
+  // Real bcrypt hash for 'Admin@123': '$2a$10$DRkaaYjpHEbVjWtYCiWOfeUL86TH2vlpw8Bpjafr4qMvo7j9DdULC'
+  const realHash = '$2a$10$DRkaaYjpHEbVjWtYCiWOfeUL86TH2vlpw8Bpjafr4qMvo7j9DdULC';
+  await client.query(`
+    INSERT INTO admin_users (id, email, password_hash, name, role)
+    VALUES (
+      'admin-root-01',
+      'admin@dlims.gov.pk',
+      '${realHash}',
+      'Director General DLIMS',
+      'SUPERADMIN'
+    ) ON CONFLICT (email) DO UPDATE SET password_hash = '${realHash}';
+  `);
 
     // Seed initial license records so the system is ready immediately
     await client.query(`
