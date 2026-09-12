@@ -130,7 +130,6 @@ async function ensureSchema(client: any) {
         '2015-08-10', '2025-08-10', 'EXPIRED', 'A+', 'Faisalabad', '/assets/driver-photo.jpg'
       ) ON CONFLICT (license_number) DO NOTHING;
     `);
-  }
   isInitialized = true;
 }
 
