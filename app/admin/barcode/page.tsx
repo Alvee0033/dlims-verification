@@ -77,7 +77,7 @@ export default function BarcodeQrPage() {
 
   // Re-generate Barcode & QR whenever values change
   useEffect(() => {
-    // 1. Generate 1D Code 128 Barcode
+    // 1. Generate 1D Code 128 Barcode with transparent background
     if (barcodeSvgRef.current && barcodeText) {
       try {
         setBarcodeError('');
@@ -86,6 +86,7 @@ export default function BarcodeQrPage() {
           displayValue: true,
           fontSize: 14,
           margin: 10,
+          background: 'rgba(0,0,0,0)',
           lineColor: '#000000',
           height: 55,
           width: 2,
@@ -113,8 +114,8 @@ export default function BarcodeQrPage() {
     }
   }, [barcodeText, qrUrl]);
 
-  // Download Barcode as PNG
-  const downloadBarcodePng = () => {
+  // Download Barcode as PNG with optional transparency
+  const downloadBarcodePng = (transparent = true) => {
     if (!barcodeSvgRef.current) return;
     const svgElement = barcodeSvgRef.current;
     const xml = new XMLSerializer().serializeToString(svgElement);
@@ -125,29 +126,46 @@ export default function BarcodeQrPage() {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = svgElement.clientWidth * 2 || 600;
-      canvas.height = svgElement.clientHeight * 2 || 200;
+      const scale = 3;
+      canvas.width = (svgElement.clientWidth || 300) * scale;
+      canvas.height = (svgElement.clientHeight || 100) * scale;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (!transparent) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       const a = document.createElement('a');
-      a.download = `barcode_${activeLicenseObj?.license_number || 'code128'}.png`;
+      a.download = `barcode_${activeLicenseObj?.license_number || 'code128'}_${transparent ? 'transparent' : 'white'}.png`;
       a.href = canvas.toDataURL('image/png');
       a.click();
     };
     img.src = image64;
   };
 
-  // Download QR Code as PNG
-  const downloadQrCodePng = () => {
-    if (!qrDataUrl) return;
-    const a = document.createElement('a');
-    a.download = `qr_${activeLicenseObj?.license_number || 'verify'}.png`;
-    a.href = qrDataUrl;
-    a.click();
+  // Download QR Code as PNG with optional transparency
+  const downloadQrCodePng = (transparent = true) => {
+    if (!qrUrl) return;
+    QRCode.toDataURL(qrUrl, {
+      width: 600,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#000000',
+        light: transparent ? '#00000000' : '#ffffff',
+      },
+    }).then((url) => {
+      const a = document.createElement('a');
+      a.download = `qr_${activeLicenseObj?.license_number || 'verify'}_${transparent ? 'transparent' : 'white'}.png`;
+      a.href = url;
+      a.click();
+    });
   };
 
   return (
@@ -297,18 +315,29 @@ export default function BarcodeQrPage() {
               {/* 1D Barcode Box */}
               <div className="col-12">
                 <div className="border rounded-3 p-3 bg-white text-center shadow-sm">
-                  <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                  <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-wrap gap-2">
                     <span className="badge bg-dark bg-opacity-10 text-dark fw-bold">
                       1D Linear Barcode (Code 128)
                     </span>
-                    <button
-                      onClick={downloadBarcodePng}
-                      className="btn btn-sm btn-outline-dark py-1 px-2 d-flex align-items-center gap-1"
-                      style={{ fontSize: '0.75rem' }}
-                    >
-                      <i className="fas fa-download"></i>
-                      <span>Download PNG</span>
-                    </button>
+                    <div className="d-flex gap-1">
+                      <button
+                        onClick={() => downloadBarcodePng(true)}
+                        className="btn btn-sm btn-outline-dark py-1 px-2 d-flex align-items-center gap-1"
+                        style={{ fontSize: '0.75rem' }}
+                        title="Download with transparent background"
+                      >
+                        <i className="fas fa-download"></i>
+                        <span>Transparent PNG</span>
+                      </button>
+                      <button
+                        onClick={() => downloadBarcodePng(false)}
+                        className="btn btn-sm btn-light border py-1 px-2 text-muted"
+                        style={{ fontSize: '0.75rem' }}
+                        title="Download with white background"
+                      >
+                        <span>White</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="d-flex justify-content-center align-items-center overflow-auto p-2" style={{ minHeight: '90px' }}>
@@ -325,18 +354,29 @@ export default function BarcodeQrPage() {
               <div className="col-12 col-md-6">
                 <div className="border rounded-3 p-3 bg-white text-center h-100 shadow-sm d-flex flex-column justify-content-between">
                   <div>
-                    <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                    <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-wrap gap-2">
                       <span className="badge bg-success bg-opacity-10 text-success fw-bold">
-                        2D QR Code (Verification)
+                        2D QR Code
                       </span>
-                      <button
-                        onClick={downloadQrCodePng}
-                        className="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1"
-                        style={{ fontSize: '0.75rem' }}
-                      >
-                        <i className="fas fa-download"></i>
-                        <span>PNG</span>
-                      </button>
+                      <div className="d-flex gap-1">
+                        <button
+                          onClick={() => downloadQrCodePng(true)}
+                          className="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1"
+                          style={{ fontSize: '0.75rem' }}
+                          title="Download transparent QR PNG"
+                        >
+                          <i className="fas fa-download"></i>
+                          <span>Transparent</span>
+                        </button>
+                        <button
+                          onClick={() => downloadQrCodePng(false)}
+                          className="btn btn-sm btn-light border py-1 px-2 text-muted"
+                          style={{ fontSize: '0.75rem' }}
+                          title="Download white QR PNG"
+                        >
+                          <span>White</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="p-2 d-flex justify-content-center">
