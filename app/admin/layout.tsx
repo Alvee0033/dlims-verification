@@ -75,6 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin', label: 'Dashboard', icon: 'fa-chart-pie' },
     { href: '/admin/licenses', label: 'Directory', icon: 'fa-address-card' },
     { href: '/admin/licenses/new', label: 'Add', desktopLabel: 'Add License', icon: 'fa-circle-plus', isAdd: true },
+    { href: '/admin/barcode', label: 'QR & Barcode', desktopLabel: 'QR & Barcode', icon: 'fa-qrcode' },
     { href: '/admin/settings', label: 'Settings', icon: 'fa-gear' },
   ];
 
