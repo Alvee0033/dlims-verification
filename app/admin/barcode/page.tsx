@@ -19,6 +19,7 @@ export default function BarcodeQrPage() {
   const [loadingLicenses, setLoadingLicenses] = useState(false);
   const [selectedLicenseId, setSelectedLicenseId] = useState<string>('custom');
   const [barcodeText, setBarcodeText] = useState('');
+  const [showBarcodeText, setShowBarcodeText] = useState(false); // Default: false to match slim demo card
   const [qrUrl, setQrUrl] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [barcodeError, setBarcodeError] = useState('');
@@ -77,19 +78,20 @@ export default function BarcodeQrPage() {
 
   // Re-generate Barcode & QR whenever values change
   useEffect(() => {
-    // 1. Generate 1D Code 128 Barcode with transparent background
+    // 1. Generate 1D Code 128 Barcode with transparent background & slim card ratio
     if (barcodeSvgRef.current && barcodeText) {
       try {
         setBarcodeError('');
         JsBarcode(barcodeSvgRef.current, barcodeText, {
           format: 'CODE128',
-          displayValue: true,
-          fontSize: 14,
-          margin: 10,
+          displayValue: showBarcodeText,
+          fontSize: 13,
+          textMargin: 3,
+          margin: 6,
           background: 'rgba(0,0,0,0)',
           lineColor: '#000000',
-          height: 55,
-          width: 2,
+          height: 38,
+          width: 2.2,
         });
       } catch (err: any) {
         setBarcodeError(err.message || 'Invalid barcode value');
@@ -112,9 +114,9 @@ export default function BarcodeQrPage() {
         })
         .catch(() => {});
     }
-  }, [barcodeText, qrUrl]);
+  }, [barcodeText, showBarcodeText, qrUrl]);
 
-  // Download Barcode as PNG with optional transparency
+  // Download Barcode as PNG matching demo card slim proportions
   const downloadBarcodePng = (transparent = true) => {
     if (!barcodeSvgRef.current) return;
     const svgElement = barcodeSvgRef.current;
@@ -126,9 +128,9 @@ export default function BarcodeQrPage() {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const scale = 3;
-      canvas.width = (svgElement.clientWidth || 300) * scale;
-      canvas.height = (svgElement.clientHeight || 100) * scale;
+      // Exact physical card demo length (645 x 96)
+      canvas.width = 645;
+      canvas.height = showBarcodeText ? 120 : 96;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
@@ -296,9 +298,9 @@ export default function BarcodeQrPage() {
               <i className="fas fa-circle-info text-success me-1"></i> Card Physical Encoding Specs
             </div>
             <ul className="text-muted small ps-3 mb-0" style={{ fontSize: '0.75rem', lineHeight: '1.5' }}>
-              <li><strong>1D Barcode:</strong> Symbology is <code>Code 128</code>, encoding portal domain (<code>{domainName || 'dlimsvitp.com'}</code>).</li>
+              <li><strong>1D Barcode:</strong> Symbology is <code>Code 128</code>, slender strip on card reverse top-left.</li>
+              <li><strong>Proportions:</strong> Scaled to the exact <code>645 &times; 96</code> physical card aspect ratio.</li>
               <li><strong>2D QR Code:</strong> High-density matrix on card reverse bottom-right.</li>
-              <li><strong>Auto-Verify:</strong> Scanning QR code with phone camera automatically opens verified driver card.</li>
             </ul>
           </div>
         </div>
@@ -317,14 +319,23 @@ export default function BarcodeQrPage() {
                 <div className="border rounded-3 p-3 bg-white text-center shadow-sm">
                   <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom flex-wrap gap-2">
                     <span className="badge bg-dark bg-opacity-10 text-dark fw-bold">
-                      1D Linear Barcode (Code 128)
+                      1D Barcode (Card Slim Ratio)
                     </span>
-                    <div className="d-flex gap-1">
+                    <div className="d-flex align-items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowBarcodeText(!showBarcodeText)}
+                        className={`btn btn-sm py-1 px-2 border ${showBarcodeText ? 'btn-dark text-white' : 'btn-light text-secondary'}`}
+                        style={{ fontSize: '0.72rem' }}
+                        title="Toggle text below barcode"
+                      >
+                        {showBarcodeText ? 'Hide Text' : 'Show Text'}
+                      </button>
                       <button
                         onClick={() => downloadBarcodePng(true)}
                         className="btn btn-sm btn-outline-dark py-1 px-2 d-flex align-items-center gap-1"
-                        style={{ fontSize: '0.75rem' }}
-                        title="Download with transparent background"
+                        style={{ fontSize: '0.72rem' }}
+                        title="Download with transparent background (645x96 demo size)"
                       >
                         <i className="fas fa-download"></i>
                         <span>Transparent PNG</span>
@@ -332,7 +343,7 @@ export default function BarcodeQrPage() {
                       <button
                         onClick={() => downloadBarcodePng(false)}
                         className="btn btn-sm btn-light border py-1 px-2 text-muted"
-                        style={{ fontSize: '0.75rem' }}
+                        style={{ fontSize: '0.72rem' }}
                         title="Download with white background"
                       >
                         <span>White</span>
@@ -340,11 +351,11 @@ export default function BarcodeQrPage() {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-center align-items-center overflow-auto p-2" style={{ minHeight: '90px' }}>
+                  <div className="d-flex justify-content-center align-items-center overflow-auto p-2" style={{ minHeight: '60px' }}>
                     {barcodeError ? (
                       <div className="text-danger small">{barcodeError}</div>
                     ) : (
-                      <svg ref={barcodeSvgRef} id="barcode-svg" style={{ maxWidth: '100%' }}></svg>
+                      <svg ref={barcodeSvgRef} id="barcode-svg" style={{ maxWidth: '100%', height: 'auto' }}></svg>
                     )}
                   </div>
                 </div>
@@ -362,7 +373,7 @@ export default function BarcodeQrPage() {
                         <button
                           onClick={() => downloadQrCodePng(true)}
                           className="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1"
-                          style={{ fontSize: '0.75rem' }}
+                          style={{ fontSize: '0.72rem' }}
                           title="Download transparent QR PNG"
                         >
                           <i className="fas fa-download"></i>
@@ -371,7 +382,7 @@ export default function BarcodeQrPage() {
                         <button
                           onClick={() => downloadQrCodePng(false)}
                           className="btn btn-sm btn-light border py-1 px-2 text-muted"
-                          style={{ fontSize: '0.75rem' }}
+                          style={{ fontSize: '0.72rem' }}
                           title="Download white QR PNG"
                         >
                           <span>White</span>
