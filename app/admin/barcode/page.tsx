@@ -32,7 +32,6 @@ export default function BarcodeQrPage() {
     const host = typeof window !== 'undefined' ? window.location.host : 'dlimsvitp.com';
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
     setDomainName(host);
-    setBarcodeText(host);
     setQrUrl(`${origin}/?verify=1280012281`);
 
     // Fetch licenses for barcode generator
@@ -46,7 +45,8 @@ export default function BarcodeQrPage() {
           const first = data.licenses[0];
           setSelectedLicenseId(first.id);
           setActiveLicenseObj(first);
-          setBarcodeText(host);
+          // Allow barcode to be enterable - default to license number or empty, not forced to domain
+          setBarcodeText(first.license_number);
           setQrUrl(`${origin}/?verify=${encodeURIComponent(first.license_number)}`);
         }
       })
@@ -59,19 +59,18 @@ export default function BarcodeQrPage() {
     const id = e.target.value;
     setSelectedLicenseId(id);
 
-    const host = domainName || (typeof window !== 'undefined' ? window.location.host : 'dlimsvitp.com');
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
 
     if (id === 'custom') {
       setActiveLicenseObj(null);
-      setBarcodeText(host);
       return;
     }
 
     const lic = licenses.find((l) => l.id === id);
     if (lic) {
       setActiveLicenseObj(lic);
-      setBarcodeText(host);
+      // Freely enterable - update to selected license number, NOT domain
+      setBarcodeText(lic.license_number);
       setQrUrl(`${origin}/?verify=${encodeURIComponent(lic.license_number)}`);
     }
   };
@@ -98,15 +97,15 @@ export default function BarcodeQrPage() {
       }
     }
 
-    // 2. Generate 2D QR Code
+    // 2. Generate 2D QR Code with 100% transparent background
     if (qrUrl) {
       QRCode.toDataURL(qrUrl, {
-        width: 260,
+        width: 320,
         margin: 2,
         errorCorrectionLevel: 'M',
         color: {
           dark: '#000000',
-          light: '#ffffff',
+          light: '#00000000', // 100% transparent background
         },
       })
         .then((url) => {
@@ -268,10 +267,10 @@ export default function BarcodeQrPage() {
                 className="form-control"
                 value={barcodeText}
                 onChange={(e) => setBarcodeText(e.target.value)}
-                placeholder={domainName || 'dlimsvitp.com'}
+                placeholder="Enter custom barcode or select license..."
               />
               <span className="text-muted small" style={{ fontSize: '0.72rem' }}>
-                * Physical Card standard: Encodes portal verification domain <code>{domainName || 'dlimsvitp.com'}</code>
+                * Freely enterable custom value, or quick-fill with <code>Actual Domain</code> / <code>License No</code>.
               </span>
             </div>
 
@@ -392,13 +391,24 @@ export default function BarcodeQrPage() {
 
                     <div className="p-2 d-flex justify-content-center">
                       {qrDataUrl ? (
-                        <img
-                          id="qr-code-img"
-                          src={qrDataUrl}
-                          alt="Verification QR Code"
-                          className="img-fluid rounded border p-1"
-                          style={{ width: '170px', height: '170px' }}
-                        />
+                        <div
+                          className="rounded border p-2 d-inline-flex align-items-center justify-content-center"
+                          style={{
+                            backgroundImage: 'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
+                            backgroundSize: '16px 16px',
+                            backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                            backgroundColor: '#fafafa',
+                          }}
+                          title="100% Transparent Background"
+                        >
+                          <img
+                            id="qr-code-img"
+                            src={qrDataUrl}
+                            alt="Verification QR Code"
+                            className="img-fluid"
+                            style={{ width: '160px', height: '160px', display: 'block' }}
+                          />
+                        </div>
                       ) : (
                         <div className="spinner-border text-success" />
                       )}
