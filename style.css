@@ -1,0 +1,594 @@
+/* DLIMS Verification - Exact Replica Stylesheet */
+
+:root {
+  --teal-primary: #009688;
+  --teal-dark: #008477;
+  --teal-light-bg: #e0f7f5;
+  --stats-blue: #0d6efd;
+  --footer-dark: #212529;
+  --page-bg: #f6f8ff;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --card-border: #edf0f5;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--page-bg);
+  font-family: var(--font-family);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   Header Navbar
+   ========================================================================== */
+.navbar {
+  background-color: #ffffff;
+  height: 43px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #edf0f5;
+  width: 100%;
+}
+
+.nav-container {
+  width: 100%;
+  max-width: 692px;
+  margin: 0 auto;
+  padding: 0 2px;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+}
+
+.logo-icon-box {
+  background-color: var(--teal-primary);
+  color: #ffffff;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.brand-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal-primary);
+  letter-spacing: -0.1px;
+}
+
+/* ==========================================================================
+   Banner / Carousel
+   ========================================================================== */
+.banner-carousel {
+  width: 100%;
+  height: 160px;
+  background-color: #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.carousel-container {
+  width: 100%;
+  height: 160px;
+  position: relative;
+}
+
+.carousel-slides {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.carousel-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.banner-custom-slide {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #00796b 0%, #004d40 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.slide-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.banner-custom-slide h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.banner-custom-slide p {
+  font-size: 12px;
+  opacity: 0.9;
+  max-width: 600px;
+}
+
+/* Translucent arrows matching reference */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 5;
+  transition: color 0.15s;
+}
+
+.carousel-arrow:hover {
+  color: #ffffff;
+}
+
+.carousel-arrow.prev {
+  left: 70px;
+}
+
+.carousel-arrow.next {
+  right: 70px;
+}
+
+/* ==========================================================================
+   Main Page Layout
+   ========================================================================== */
+.page-container {
+  width: 100%;
+  max-width: 692px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* ==========================================================================
+   License Verification Card
+   ========================================================================== */
+.verification-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 27px;
+  margin-bottom: 44px;
+}
+
+.verification-card {
+  width: 448px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+}
+
+.card-header {
+  background-color: var(--teal-primary);
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  color: #ffffff;
+}
+
+.header-search-icon {
+  font-size: 13px;
+  transform: rotate(90deg);
+}
+
+.card-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+}
+
+.card-body {
+  padding: 18px 18px 18px 18px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 5px;
+}
+
+.select-container {
+  position: relative;
+  width: 100%;
+}
+
+.select-container select {
+  width: 100%;
+  height: 32px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 0 28px 0 10px;
+  font-size: 11px;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.select-container select:focus {
+  border-color: var(--teal-primary);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.input-container {
+  position: relative;
+  width: 100%;
+}
+
+.input-container input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 0 30px 0 10px;
+  font-size: 11px;
+  color: #374151;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input-container input::placeholder {
+  color: #9ca3af;
+  font-size: 10.5px;
+}
+
+.input-container input:focus {
+  border-color: var(--teal-primary);
+}
+
+.input-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.btn-verify {
+  background-color: var(--teal-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-verify:hover {
+  background-color: var(--teal-dark);
+}
+
+.btn-verify i {
+  font-size: 11px;
+}
+
+/* Verification Result Simulation */
+.verification-result {
+  border-top: 1px solid #edf0f5;
+  background-color: #f8fafc;
+  padding: 14px 18px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.badge-status-valid {
+  background-color: #d1fae5;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.close-result-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.result-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.data-cell .data-label {
+  font-size: 9.5px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+
+.data-cell .data-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.data-val.category-highlight {
+  color: #0284c7;
+}
+
+.data-val.active-status {
+  color: #059669;
+}
+
+/* ==========================================================================
+   The Importance of Licensed & Safe Driving
+   ========================================================================== */
+.importance-section {
+  margin-bottom: 21px;
+}
+
+.importance-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.importance-title {
+  font-size: 18.5px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.2px;
+  margin-bottom: 4px;
+}
+
+.importance-subtitle {
+  font-size: 10.5px;
+  color: #64748b;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.feature-box {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 16px 14px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  height: 164px;
+}
+
+.feature-icon-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--teal-light-bg);
+  color: var(--teal-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.feature-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.feature-text {
+  font-size: 9px;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   Road Safety Statistics Banner
+   ========================================================================== */
+.stats-card {
+  background-color: var(--stats-blue);
+  border-radius: 6px;
+  height: 115px;
+  padding: 16px 20px;
+  color: #ffffff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+
+.stats-heading {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  letter-spacing: -0.1px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stat-col {
+  padding: 0 4px;
+}
+
+.stat-pct {
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.stat-info {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.35;
+  max-width: 190px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.footer {
+  background-color: var(--footer-dark);
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.footer-inner p {
+  font-size: 10px;
+  color: #ced4da;
+  letter-spacing: 0.1px;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 740px) {
+  .nav-container, .page-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .carousel-arrow.prev {
+    left: 15px;
+  }
+  .carousel-arrow.next {
+    right: 15px;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .verification-card {
+    width: 100%;
+  }
+
+  .stats-card {
+    height: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .result-data-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DLIMS Verification</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome CDN for Exact Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand-logo">
+        <span class="logo-icon-box">
+          <i class="fas fa-id-card"></i>
+        </span>
+        <span class="brand-text">DLIMS Verification</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Banner / Carousel Section -->
+  <section class="banner-carousel">
+    <div class="carousel-container">
+      <div class="carousel-slides" id="carouselSlides">
+        <!-- Slide 1: Exact original banner -->
+        <div class="carousel-slide active">
+          <img src="assets/banner.png" alt="Islamabad Police and Traffic Rules Banner" class="banner-img">
+        </div>
+        <!-- Slide 2: Driving Safety Awareness Slide -->
+        <div class="carousel-slide">
+          <div class="banner-custom-slide">
+            <div class="slide-badge"><i class="fas fa-shield-alt"></i> Official Driving Portal</div>
+            <h2>Verify Your Driving License Online</h2>
+            <p>Instant digital verification for traffic safety, law compliance, and authentic driving credentials.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carousel Navigation Arrows matching screenshot -->
+      <button class="carousel-arrow prev" id="prevBtn" aria-label="Previous">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button class="carousel-arrow next" id="nextBtn" aria-label="Next">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </section>
+
+  <!-- Main Content Wrapper -->
+  <main class="page-container">
+
+    <!-- License Verification Card -->
+    <section class="verification-section">
+      <div class="verification-card">
+        <div class="card-header">
+          <i class="fas fa-search header-search-icon"></i>
+          <h2 class="card-title">License Verification</h2>
+        </div>
+
+        <form class="card-body" id="verifyForm">
+          <div class="form-group">
+            <label for="verificationMethod">Verification Method</label>
+            <div class="select-container">
+              <select id="verificationMethod" name="verificationMethod">
+                <option value="license">License Number</option>
+                <option value="cnic">CNIC Number</option>
+                <option value="tracking">Tracking ID</option>
+              </select>
+              <i class="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="detailsInput" id="detailsLabel">Enter Details</label>
+            <div class="input-container">
+              <input 
+                type="text" 
+                id="detailsInput" 
+                name="detailsInput" 
+                placeholder="Enter your license number e.g: 123123400000"
+                required
+              >
+              <span class="input-icon">
+                <i class="fas fa-id-card"></i>
+              </span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-verify" id="btnSubmit">
+            <i class="fas fa-id-card"></i>
+            <span>Verify License</span>
+          </button>
+        </form>
+
+        <!-- Verification Results Card (Interactive simulation) -->
+        <div class="verification-result" id="resultCard" style="display: none;">
+          <div class="result-header">
+            <div class="badge-status-valid">
+              <i class="fas fa-check-circle"></i> Valid License Record
+            </div>
+            <button type="button" class="close-result-btn" id="closeResultBtn" aria-label="Close">&times;</button>
+          </div>
+          <div class="result-data-grid">
+            <div class="data-cell">
+              <div class="data-label">Driver Name</div>
+              <div class="data-val" id="resDriverName">Muhammad Ali Khan</div>
+            </div>
+            <div class="data-cell">
+              <div class="data-label">Father / Guardian</div>
+              <div class="data-val" id="resFatherName">Abdul Rehman Khan</div>
+            </div>
+            <div class="data-cell">
+              <div class="data-label">License Number</div>
+              <div class="data-val" id="resLicNum">123123400000</div>
+            </div>
+            <div class="data-cell">
+              <div class="data-label">CNIC Number</div>
+              <div class="data-val" id="resCnicNum">37405-1234567-1</div>
+            </div>
+            <div class="data-cell">
+              <div class="data-label">Allowed Categories</div>
+              <div class="data-val category-highlight">Motor Car, LTV, Motorcycle</div>
+            </div>
+            <div class="data-cell">
+              <div class="data-label">Status & Expiry</div>
+              <div class="data-val active-status">Active (Valid till 15-Aug-2029)</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- The Importance of Licensed & Safe Driving Section -->
+    <section class="importance-section">
+      <div class="importance-header">
+        <h2 class="importance-title">The Importance of Licensed & Safe Driving</h2>
+        <p class="importance-subtitle">Promoting road safety and responsible driving in our community</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1: Road Safety -->
+        <div class="feature-box">
+          <div class="feature-icon-circle">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h3 class="feature-title">Road Safety</h3>
+          <p class="feature-text">
+            Licensed drivers are trained to follow traffic rules and regulations, significantly reducing the risk of accidents and making roads safer for everyone.
+          </p>
+        </div>
+
+        <!-- Feature 2: Accident Prevention -->
+        <div class="feature-box">
+          <div class="feature-icon-circle">
+            <i class="fas fa-car-crash"></i>
+          </div>
+          <h3 class="feature-title">Accident Prevention</h3>
+          <p class="feature-text">
+            Proper licensing ensures drivers understand defensive driving techniques that help prevent accidents and save lives on our roads.
+          </p>
+        </div>
+
+        <!-- Feature 3: Legal Protection -->
+        <div class="feature-box">
+          <div class="feature-icon-circle">
+            <i class="fas fa-gavel"></i>
+          </div>
+          <h3 class="feature-title">Legal Protection</h3>
+          <p class="feature-text">
+            A valid license provides legal protection and ensures you're covered by insurance in case of accidents or traffic incidents.
+          </p>
+        </div>
+
+        <!-- Feature 4: Skill Certification -->
+        <div class="feature-box">
+          <div class="feature-icon-circle">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <h3 class="feature-title">Skill Certification</h3>
+          <p class="feature-text">
+            Your license certifies that you possess the necessary skills and knowledge to operate a vehicle safely on public roads.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Road Safety Statistics Banner -->
+    <section class="stats-card">
+      <h2 class="stats-heading">Road Safety Statistics</h2>
+      <div class="stats-row">
+        <!-- Stat 1 -->
+        <div class="stat-col">
+          <div class="stat-pct">70%</div>
+          <p class="stat-info">Reduction in accidents with licensed drivers compared to unlicensed drivers</p>
+        </div>
+        <!-- Stat 2 -->
+        <div class="stat-col">
+          <div class="stat-pct">35%</div>
+          <p class="stat-info">Lower insurance premiums for drivers with clean driving records</p>
+        </div>
+        <!-- Stat 3 -->
+        <div class="stat-col">
+          <div class="stat-pct">90%</div>
+          <p class="stat-info">Of road accidents can be prevented by following proper driving practices</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 dlimsvitp.com All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

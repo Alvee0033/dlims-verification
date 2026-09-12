@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model License {
+  id              String   @id @default(uuid())
+  licenseNumber   String   @unique
+  cnic            String   @unique
+  name            String
+  fatherName      String?
+  address         String
+  allowedVehicles String   @default("M/Cycle, M/Car")
+  issueDate       String
+  expiryDate      String
+  status          String   @default("VALID") // VALID, SUSPENDED, EXPIRED, REVOKED
+  bloodGroup      String?
+  district        String?
+  photoUrl        String   @default("/assets/driver-photo.jpg")
+  idCardFrontUrl  String?
+  rawOcrText      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  verificationLogs VerificationLog[]
+
+  @@index([licenseNumber])
+  @@index([cnic])
+}
+
+model VerificationLog {
+  id               String   @id @default(uuid())
+  searchType       String   // "license_number" | "cnic"
+  searchValue      String
+  status           String   // "SUCCESS" | "NOT_FOUND" | "FAILED"
+  ipAddress        String?
+  userAgent        String?
+  matchedLicenseId String?
+  matchedLicense   License? @relation(fields: [matchedLicenseId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now())
+
+  @@index([searchValue])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  adminEmail String?
+  action     String   // "LOGIN", "CREATE_LICENSE", "UPDATE_LICENSE", "DELETE_LICENSE", "OCR_SCAN"
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}

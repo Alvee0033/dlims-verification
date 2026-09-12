@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+.env.local
+.env
+.tempmediaStorage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
