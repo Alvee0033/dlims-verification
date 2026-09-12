@@ -14,11 +14,12 @@ interface LicenseItem {
 }
 
 export default function BarcodeQrPage() {
+  const [domainName, setDomainName] = useState('');
   const [licenses, setLicenses] = useState<LicenseItem[]>([]);
   const [loadingLicenses, setLoadingLicenses] = useState(false);
   const [selectedLicenseId, setSelectedLicenseId] = useState<string>('custom');
-  const [barcodeText, setBarcodeText] = useState('dlimsvitp.com');
-  const [qrUrl, setQrUrl] = useState('https://dlimsvitp.com/verify.php?search_by=license_number&search_value=1280012281');
+  const [barcodeText, setBarcodeText] = useState('');
+  const [qrUrl, setQrUrl] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [barcodeError, setBarcodeError] = useState('');
   const [activeLicenseObj, setActiveLicenseObj] = useState<LicenseItem | null>(null);
@@ -26,6 +27,13 @@ export default function BarcodeQrPage() {
   const barcodeSvgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
+    // Detect the actual current domain and origin dynamically
+    const host = typeof window !== 'undefined' ? window.location.host : 'dlimsvitp.com';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
+    setDomainName(host);
+    setBarcodeText(host);
+    setQrUrl(`${origin}/?verify=1280012281`);
+
     // Fetch licenses for barcode generator
     setLoadingLicenses(true);
     fetch('/api/admin/licenses?limit=100')
@@ -37,8 +45,7 @@ export default function BarcodeQrPage() {
           const first = data.licenses[0];
           setSelectedLicenseId(first.id);
           setActiveLicenseObj(first);
-          setBarcodeText('dlimsvitp.com');
-          const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
+          setBarcodeText(host);
           setQrUrl(`${origin}/?verify=${encodeURIComponent(first.license_number)}`);
         }
       })
@@ -51,16 +58,19 @@ export default function BarcodeQrPage() {
     const id = e.target.value;
     setSelectedLicenseId(id);
 
+    const host = domainName || (typeof window !== 'undefined' ? window.location.host : 'dlimsvitp.com');
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
+
     if (id === 'custom') {
       setActiveLicenseObj(null);
+      setBarcodeText(host);
       return;
     }
 
     const lic = licenses.find((l) => l.id === id);
     if (lic) {
       setActiveLicenseObj(lic);
-      setBarcodeText('dlimsvitp.com');
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
+      setBarcodeText(host);
       setQrUrl(`${origin}/?verify=${encodeURIComponent(lic.license_number)}`);
     }
   };
@@ -204,19 +214,44 @@ export default function BarcodeQrPage() {
               </div>
             )}
 
+            {/* 1D Barcode with Actual Domain & Controls */}
             <div className="mb-3">
-              <label className="form-label small fw-semibold text-secondary">
-                1D Barcode Value (Code 128):
-              </label>
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label className="form-label small fw-semibold text-secondary mb-0">
+                  1D Barcode Value (Code 128):
+                </label>
+                <div className="d-flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setBarcodeText(domainName)}
+                    className="btn btn-sm btn-outline-success py-0 px-2"
+                    style={{ fontSize: '0.7rem' }}
+                    title="Fill with actual website domain"
+                  >
+                    Actual Domain
+                  </button>
+                  {activeLicenseObj && (
+                    <button
+                      type="button"
+                      onClick={() => setBarcodeText(activeLicenseObj.license_number)}
+                      className="btn btn-sm btn-outline-secondary py-0 px-2"
+                      style={{ fontSize: '0.7rem' }}
+                      title="Fill with license number"
+                    >
+                      License No
+                    </button>
+                  )}
+                </div>
+              </div>
               <input
                 type="text"
                 className="form-control"
                 value={barcodeText}
                 onChange={(e) => setBarcodeText(e.target.value)}
-                placeholder="e.g. dlimsvitp.com or 1280012281"
+                placeholder={domainName || 'dlimsvitp.com'}
               />
               <span className="text-muted small" style={{ fontSize: '0.72rem' }}>
-                * Physical Card standard: Encodes portal verification domain <code>dlimsvitp.com</code>
+                * Physical Card standard: Encodes portal verification domain <code>{domainName || 'dlimsvitp.com'}</code>
               </span>
             </div>
 
@@ -243,7 +278,7 @@ export default function BarcodeQrPage() {
               <i className="fas fa-circle-info text-success me-1"></i> Card Physical Encoding Specs
             </div>
             <ul className="text-muted small ps-3 mb-0" style={{ fontSize: '0.75rem', lineHeight: '1.5' }}>
-              <li><strong>1D Barcode:</strong> Symbology is <code>Code 128</code>, printed on card reverse top-left.</li>
+              <li><strong>1D Barcode:</strong> Symbology is <code>Code 128</code>, encoding portal domain (<code>{domainName || 'dlimsvitp.com'}</code>).</li>
               <li><strong>2D QR Code:</strong> High-density matrix on card reverse bottom-right.</li>
               <li><strong>Auto-Verify:</strong> Scanning QR code with phone camera automatically opens verified driver card.</li>
             </ul>
@@ -365,7 +400,7 @@ export default function BarcodeQrPage() {
                     {/* Bottom Right QR representation */}
                     <div className="d-flex justify-content-between align-items-end">
                       <div className="text-muted" style={{ fontSize: '0.55rem' }}>
-                        Islamabad Traffic Police<br />dlimsvitp.com
+                        Islamabad Traffic Police<br />{domainName || 'dlimsvitp.com'}
                       </div>
                       {qrDataUrl && (
                         <img
