@@ -43,12 +43,8 @@ export default function Home() {
     setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchValue.trim()) {
-      alert('Please enter verification details');
-      return;
-    }
+  const performVerification = async (method: string, value: string) => {
+    if (!value || !value.trim()) return;
     setIsVerifying(true);
     setVerifyError(null);
 
@@ -56,7 +52,7 @@ export default function Home() {
       const res = await fetch('/api/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchBy, searchValue: searchValue.trim() }),
+        body: JSON.stringify({ searchBy: method, searchValue: value.trim() }),
       });
 
       const data = await res.json();
@@ -68,11 +64,61 @@ export default function Home() {
       }
 
       setResult(data.result);
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } catch {
       setVerifyError('An error occurred while connecting to the verification server.');
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  // Auto-verify when URL query parameters are provided (e.g. ?verify=ISB-8839210)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const cnicParam = urlParams.get('cnic');
+    const licenseParam = urlParams.get('license') || urlParams.get('license_number');
+    const verifyParam =
+      urlParams.get('verify') ||
+      urlParams.get('search_value') ||
+      urlParams.get('searchValue') ||
+      urlParams.get('id');
+    const searchByParam = urlParams.get('search_by') || urlParams.get('searchBy');
+
+    let targetVal = '';
+    let targetBy = 'license_number';
+
+    if (cnicParam && cnicParam.trim()) {
+      targetVal = cnicParam.trim();
+      targetBy = 'cnic';
+    } else if (licenseParam && licenseParam.trim()) {
+      targetVal = licenseParam.trim();
+      targetBy = 'license_number';
+    } else if (verifyParam && verifyParam.trim()) {
+      targetVal = verifyParam.trim();
+      if (searchByParam === 'cnic' || /^\d{5}-\d{7}-\d$/.test(targetVal)) {
+        targetBy = 'cnic';
+      } else {
+        targetBy = 'license_number';
+      }
+    }
+
+    if (targetVal) {
+      setSearchBy(targetBy);
+      setSearchValue(targetVal);
+      performVerification(targetBy, targetVal);
+    }
+  }, []);
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchValue.trim()) {
+      alert('Please enter verification details');
+      return;
+    }
+    await performVerification(searchBy, searchValue.trim());
   };
 
   return (
@@ -166,6 +212,12 @@ export default function Home() {
                   </div>
                   <div className="card-body">
                     <form onSubmit={handleVerify}>
+                      {isVerifying && (
+                        <div className="alert alert-success bg-opacity-10 border border-success py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+                          <div className="spinner-border spinner-border-sm text-success flex-shrink-0" role="status"></div>
+                          <div className="text-success fw-semibold">Verifying licence details automatically...</div>
+                        </div>
+                      )}
                       {verifyError && (
                         <div className="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
                           <i className="fas fa-circle-exclamation text-danger flex-shrink-0"></i>
