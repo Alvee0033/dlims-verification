@@ -197,7 +197,7 @@ def generate_card(data, output_format="png", preview=False):
     english_name   = str(data.get("name") or "").strip()
     urdu_name      = str(data.get("urduName") or data.get("urdu_name") or "").strip()
     address        = str(data.get("address") or "").strip()
-    license_number = str(data.get("licenseNumber") or data.get("license_number") or "").strip()
+    license_number = str(data.get("licenseNumber") or data.get("license_number") or data.get("license_no") or "").strip()
     dob            = format_date(data.get("dob") or "")
     cnic_raw       = str(data.get("cnic") or "").strip()
     clean_cnic     = cnic_raw.replace("-", "").strip()
