@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const file = formData.get('photo') as File | null;
+    const file = (formData.get('signature') || formData.get('photo') || formData.get('file')) as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No photo provided' }, { status: 400 });
+      return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -26,14 +26,16 @@ export async function POST(req: NextRequest) {
     await fs.mkdir(uploadsDir, { recursive: true });
 
     // Generate safe filename
-    const ext = path.extname(file.name) || '.jpg';
-    const filename = `driver_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+    const isSignature = formData.has('signature');
+    const ext = path.extname(file.name) || (isSignature ? '.png' : '.jpg');
+    const prefix = isSignature ? 'signature_' : 'driver_';
+    const filename = `${prefix}${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
     const filePath = path.join(uploadsDir, filename);
 
     await fs.writeFile(filePath, buffer);
 
-    const photoUrl = `/uploads/${filename}`;
-    return NextResponse.json({ success: true, url: photoUrl });
+    const fileUrl = `/uploads/${filename}`;
+    return NextResponse.json({ success: true, url: fileUrl });
   } catch (err: any) {
     console.error('Photo upload error:', err);
     return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });

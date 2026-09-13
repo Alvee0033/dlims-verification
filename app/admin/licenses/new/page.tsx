@@ -108,12 +108,14 @@ export default function NewLicensePage() {
     bloodGroup: 'B+',
     district: '',
     photoUrl: '',
+    signatureUrl: '',
   });
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
 
   // Live Card Preview & Auto-generation state
   const [cardPreviewUri, setCardPreviewUri] = useState<string | null>(null);
@@ -148,11 +150,11 @@ export default function NewLicensePage() {
     refreshCardPreview(formData);
   }, []);
 
-  // Real-time debounced preview (250ms debounce, seamless background sync)
+  // Real-time debounced preview (200ms debounce, smooth background sync)
   useEffect(() => {
     const timer = setTimeout(() => {
       refreshCardPreview(formData);
-    }, 250);
+    }, 200);
     return () => clearTimeout(timer);
   }, [
     formData.name,
@@ -167,6 +169,7 @@ export default function NewLicensePage() {
     formData.bloodGroup,
     formData.allowedVehicles,
     formData.photoUrl,
+    formData.signatureUrl,
   ]);
 
   // Download PDF or PNG
@@ -230,6 +233,35 @@ export default function NewLicensePage() {
         alert(err.message || 'Error uploading photo');
       } finally {
         setUploadingPhoto(false);
+      }
+    }
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setUploadingSignature(true);
+      try {
+        const data = new FormData();
+        data.append('signature', file);
+
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: data,
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Failed to upload signature');
+        }
+
+        const newSignatureUrl = json.url;
+        setFormData((prev) => ({ ...prev, signatureUrl: newSignatureUrl }));
+        refreshCardPreview({ ...formData, signatureUrl: newSignatureUrl });
+      } catch (err: any) {
+        alert(err.message || 'Error uploading signature');
+      } finally {
+        setUploadingSignature(false);
       }
     }
   };
@@ -773,6 +805,74 @@ export default function NewLicensePage() {
                         </div>
                         <div className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>
                           Auto-framed into card template (404x480)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Driver Signature */}
+                  <div className="col-12 col-md-6">
+                    <label className="form-label small fw-semibold text-secondary d-block">
+                      Driver Signature
+                    </label>
+                    <div className="d-flex align-items-center gap-3 p-2 border rounded bg-light">
+                      <div
+                        className="position-relative rounded overflow-hidden border border-2 border-secondary border-opacity-50 flex-shrink-0 bg-white shadow-sm d-flex align-items-center justify-content-center"
+                        style={{ width: 80, height: 60 }}
+                      >
+                        {formData.signatureUrl ? (
+                          <img
+                            src={formData.signatureUrl}
+                            alt="Signature"
+                            className="w-100 h-100 object-fit-contain p-1"
+                          />
+                        ) : (
+                          <i className="fas fa-file-signature text-muted opacity-50" style={{ fontSize: '1.4rem' }}></i>
+                        )}
+                      </div>
+
+                      <div className="flex-grow-1">
+                        <input
+                          type="file"
+                          id="driverSignatureFileInput"
+                          accept="image/*"
+                          onChange={handleSignatureUpload}
+                          className="d-none"
+                        />
+                        <div className="d-flex align-items-center gap-2">
+                          <label
+                            htmlFor="driverSignatureFileInput"
+                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 py-1 px-3 fw-semibold"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {uploadingSignature ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm" />
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <i className="fas fa-file-signature"></i>
+                                <span>{formData.signatureUrl ? 'Change Sign' : 'Upload Sign'}</span>
+                              </>
+                            )}
+                          </label>
+                          {formData.signatureUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, signatureUrl: '' }));
+                                refreshCardPreview({ ...formData, signatureUrl: '' });
+                              }}
+                              className="btn btn-sm btn-outline-danger py-1 px-2"
+                              title="Remove signature"
+                            >
+                              <i className="fas fa-trash-alt me-1"></i> Remove
+                            </button>
+                          )}
+                        </div>
+                        <div className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>
+                          Placed in signature box below driver photo
                         </div>
                       </div>
                     </div>

@@ -61,6 +61,7 @@ async function ensureSchema(client: any) {
 
     ALTER TABLE licenses ADD COLUMN IF NOT EXISTS dob VARCHAR(32);
     ALTER TABLE licenses ADD COLUMN IF NOT EXISTS urdu_name VARCHAR(255);
+    ALTER TABLE licenses ADD COLUMN IF NOT EXISTS signature_url TEXT;
 
     CREATE INDEX IF NOT EXISTS idx_licenses_number ON licenses(license_number);
     CREATE INDEX IF NOT EXISTS idx_licenses_cnic ON licenses(cnic);
@@ -182,6 +183,7 @@ export interface LicenseRecord {
   blood_group: string | null;
   district: string | null;
   photo_url: string;
+  signature_url?: string | null;
   id_card_front_url: string | null;
   raw_ocr_text: string | null;
   dob?: string | null;
@@ -370,9 +372,9 @@ export async function createLicense(data: Omit<LicenseRecord, 'id' | 'created_at
     `INSERT INTO licenses (
       id, license_number, cnic, name, father_name, address, allowed_vehicles,
       issue_date, expiry_date, status, blood_group, district, photo_url,
-      id_card_front_url, raw_ocr_text, dob, urdu_name
+      id_card_front_url, raw_ocr_text, dob, urdu_name, signature_url
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
     ) RETURNING *`,
     [
       id,
@@ -392,6 +394,7 @@ export async function createLicense(data: Omit<LicenseRecord, 'id' | 'created_at
       data.raw_ocr_text || null,
       data.dob || null,
       data.urdu_name?.trim() || null,
+      data.signature_url || null,
     ]
   );
   return rows[0];
@@ -427,8 +430,9 @@ export async function updateLicense(
       raw_ocr_text = $14,
       dob = $15,
       urdu_name = $16,
+      signature_url = $17,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $17
+    WHERE id = $18
     RETURNING *`,
     [
       updated.license_number,
@@ -447,6 +451,7 @@ export async function updateLicense(
       updated.raw_ocr_text,
       updated.dob || null,
       updated.urdu_name || null,
+      updated.signature_url || null,
       id,
     ]
   );

@@ -23,6 +23,8 @@ export interface CardData {
   allowed_vehicles?: string | null;
   photoUrl?: string | null;
   photo_url?: string | null;
+  signatureUrl?: string | null;
+  signature_url?: string | null;
   website?: string | null;
   domain?: string | null;
   barcodeText?: string | null;

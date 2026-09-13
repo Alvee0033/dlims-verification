@@ -47,6 +47,10 @@ async function seed() {
       console.log('Updated Admin User: admin@dlims.gov.pk');
     }
 
+    await client.query('ALTER TABLE licenses ADD COLUMN IF NOT EXISTS signature_url TEXT;');
+    await client.query('ALTER TABLE licenses ADD COLUMN IF NOT EXISTS dob VARCHAR(32);');
+    await client.query('ALTER TABLE licenses ADD COLUMN IF NOT EXISTS urdu_name VARCHAR(255);');
+
     console.log('Seeding Driving Licenses...');
     const licenses = [
       {

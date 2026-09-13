@@ -13,6 +13,7 @@ from io import BytesIO
 
 # ── Imports (loaded once) ────────────────────────────────────────────────────
 from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 import barcode
 from barcode.writer import ImageWriter
 import qrcode
@@ -62,6 +63,11 @@ FONTS_HALF = _load_fonts(0.5)
 # Full-res: x=89, y=427, w=404, h=480
 PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H = 89, 427, 404, 480
 
+# ── Signature coordinates (inner signature box below driver photo) ────────────
+# Full-res inner box: x=81..499, y=931..1138. Center: cx=290, cy=1034.5
+SIGN_BOX_CX, SIGN_BOX_CY = 290, 1034.5
+SIGN_MAX_W, SIGN_MAX_H = 340, 150
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def format_date(d_str):
     if not d_str:
@@ -72,21 +78,35 @@ def format_date(d_str):
         return f"{p[2]}-{p[1]}-{p[0]}"
     return d_str
 
-def load_photo(photo_input):
-    if not photo_input or not str(photo_input).strip():
+def _load_image_input(img_input):
+    if not img_input or not str(img_input).strip():
         return None
-    clean_p = str(photo_input).lstrip("/")
+    input_str = str(img_input).strip()
+    if input_str.startswith("data:image"):
+        try:
+            _, encoded = input_str.split(",", 1)
+            data_bytes = base64.b64decode(encoded)
+            return Image.open(BytesIO(data_bytes))
+        except Exception:
+            pass
+    clean_p = input_str.lstrip("/")
     candidates = [
-        photo_input,
+        input_str,
         os.path.join(BASE_DIR, clean_p),
         os.path.join(BASE_DIR, "public", clean_p),
     ]
     for pp in candidates:
         if os.path.exists(pp) and os.path.isfile(pp):
             try:
-                return Image.open(pp).convert("RGBA")
+                return Image.open(pp)
             except Exception:
                 pass
+    return None
+
+def load_photo(photo_input):
+    img = _load_image_input(photo_input)
+    if img:
+        return img.convert("RGBA")
     return None
 
 def paste_photo(template, photo_input, scale=1.0):
@@ -101,6 +121,57 @@ def paste_photo(template, photo_input, scale=1.0):
     ph = int(PHOTO_H * scale)
     photo_img = ImageOps.fit(photo_img, (pw, ph), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
     template.paste(photo_img, (px, py), photo_img)
+
+def paste_signature(template, signature_input, scale=1.0):
+    """Paste driver signature into template inside signature box."""
+    sig_raw = _load_image_input(signature_input)
+    if not sig_raw:
+        return
+
+    # Check if image already has transparent alpha channel
+    has_alpha = False
+    if sig_raw.mode == "RGBA":
+        alpha = np.array(sig_raw)[:, :, 3]
+        if np.any(alpha < 245):
+            has_alpha = True
+
+    if not has_alpha:
+        # Convert light paper background to transparent
+        sig_rgb = sig_raw.convert("RGB")
+        arr = np.array(sig_rgb)
+        gray = np.mean(arr, axis=2)
+        h, w = gray.shape
+        rgba = np.zeros((h, w, 4), dtype=np.uint8)
+        # Soft ramp: brightness > 215 -> transparent, brightness < 125 -> solid ink
+        alpha_arr = np.clip((215 - gray) * (255.0 / (215 - 125)), 0, 255).astype(np.uint8)
+        rgba[:, :, :3] = 15 # dark ink
+        rgba[:, :, 3] = alpha_arr
+        sig = Image.fromarray(rgba, "RGBA")
+    else:
+        sig = sig_raw.convert("RGBA")
+
+    # Crop transparent borders around the signature
+    bbox = sig.getbbox()
+    if bbox:
+        sig = sig.crop(bbox)
+
+    w, h = sig.size
+    if w == 0 or h == 0:
+        return
+
+    # Scale preserving aspect ratio to fit inside signature box
+    max_w = int(SIGN_MAX_W * scale)
+    max_h = int(SIGN_MAX_H * scale)
+    ratio = min(max_w / w, max_h / h)
+    new_w = max(1, int(w * ratio))
+    new_h = max(1, int(h * ratio))
+    sig_scaled = sig.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+    box_cx = int(SIGN_BOX_CX * scale)
+    box_cy = int(SIGN_BOX_CY * scale)
+    paste_x = int(box_cx - new_w / 2)
+    paste_y = int(box_cy - new_h / 2)
+    template.paste(sig_scaled, (paste_x, paste_y), sig_scaled)
 
 # ── Core generator ────────────────────────────────────────────────────────────
 def generate_card(data, output_format="png", preview=False):
@@ -135,9 +206,13 @@ def generate_card(data, output_format="png", preview=False):
     website        = str(data.get("website") or "www.dlimsvitpk.com").strip()
     barcode_value  = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvitpk.com").strip()
     photo_input    = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
+    signature_input = data.get("signatureUrl") or data.get("signature_url") or data.get("signaturePath") or data.get("signature_path")
 
     # 1. Driver photo (exact frame coords)
     paste_photo(template, photo_input, scale)
+
+    # 1b. Driver signature (exact sign box below photo)
+    paste_signature(template, signature_input, scale)
 
     # 2. Urdu name
     if urdu_name and fonts["urdu"]:

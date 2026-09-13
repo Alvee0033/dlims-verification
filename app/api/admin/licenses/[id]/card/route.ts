@@ -37,6 +37,7 @@ export async function GET(
         bloodGroup: license.blood_group,
         allowedVehicles: license.allowed_vehicles,
         photoUrl: license.photo_url,
+        signatureUrl: license.signature_url,
         domain,
       },
       format

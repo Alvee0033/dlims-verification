@@ -26,12 +26,14 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
     blood_group: 'B+',
     district: '',
     photo_url: '/assets/driver-photo.jpg',
+    signature_url: '',
   });
 
   // Card Preview & Generator state
   const [cardPreviewUri, setCardPreviewUri] = useState<string | null>(null);
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<'pdf' | 'png' | null>(null);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
 
   // Manual card preview — only called when user clicks "Preview Card"
   const refreshCardPreview = async (dataToRender = formData) => {
@@ -54,6 +56,7 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
           blood_group: dataToRender.blood_group,
           allowed_vehicles: dataToRender.allowed_vehicles,
           photo_url: dataToRender.photo_url,
+          signature_url: dataToRender.signature_url,
           preview: true,
         }),
       });
@@ -91,6 +94,7 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
             blood_group: data.license.blood_group || 'B+',
             district: data.license.district || '',
             photo_url: data.license.photo_url || '/assets/driver-photo.jpg',
+            signature_url: data.license.signature_url || '',
           };
           setFormData(loaded);
           refreshCardPreview(loaded);
@@ -122,6 +126,7 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
     formData.blood_group,
     formData.allowed_vehicles,
     formData.photo_url,
+    formData.signature_url,
     loading,
   ]);
 
@@ -145,6 +150,7 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
           blood_group: formData.blood_group,
           allowed_vehicles: formData.allowed_vehicles,
           photo_url: formData.photo_url,
+          signature_url: formData.signature_url,
           format,
           download: true,
         }),
@@ -198,6 +204,35 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
         alert(err.message || 'Error uploading photo');
       } finally {
         setUploadingPhoto(false);
+      }
+    }
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setUploadingSignature(true);
+      try {
+        const data = new FormData();
+        data.append('signature', file);
+
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: data,
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Failed to upload signature');
+        }
+
+        const newSignatureUrl = json.url;
+        setFormData((prev) => ({ ...prev, signature_url: newSignatureUrl }));
+        refreshCardPreview({ ...formData, signature_url: newSignatureUrl });
+      } catch (err: any) {
+        alert(err.message || 'Error uploading signature');
+      } finally {
+        setUploadingSignature(false);
       }
     }
   };
@@ -489,6 +524,68 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
                           </>
                         )}
                       </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Driver Signature */}
+                <div className="col-12 col-md-4">
+                  <label className="form-label small fw-semibold">Driver Signature</label>
+                  <div className="d-flex align-items-center gap-3 p-2 border rounded bg-light">
+                    <div
+                      className="position-relative rounded overflow-hidden border border-2 border-primary flex-shrink-0 bg-white shadow-sm d-flex align-items-center justify-content-center"
+                      style={{ width: 70, height: 50 }}
+                    >
+                      {formData.signature_url ? (
+                        <img
+                          src={formData.signature_url}
+                          alt="Signature"
+                          className="w-100 h-100 object-fit-contain p-1"
+                        />
+                      ) : (
+                        <i className="fas fa-file-signature text-muted opacity-50" style={{ fontSize: '1.2rem' }}></i>
+                      )}
+                    </div>
+                    <div className="flex-grow-1">
+                      <input
+                        type="file"
+                        id="editDriverSignatureInput"
+                        accept="image/*"
+                        onChange={handleSignatureUpload}
+                        className="d-none"
+                      />
+                      <div className="d-flex align-items-center gap-2">
+                        <label
+                          htmlFor="editDriverSignatureInput"
+                          className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 py-1 px-3 fw-semibold"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {uploadingSignature ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-signature"></i>
+                              <span>{formData.signature_url ? 'Change Sign' : 'Upload Sign'}</span>
+                            </>
+                          )}
+                        </label>
+                        {formData.signature_url && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, signature_url: '' }));
+                              refreshCardPreview({ ...formData, signature_url: '' });
+                            }}
+                            className="btn btn-sm btn-outline-danger py-1 px-2"
+                            title="Remove signature"
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

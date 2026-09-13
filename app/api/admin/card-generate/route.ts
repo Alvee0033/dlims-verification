@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         bloodGroup: body.bloodGroup || body.blood_group || '',
         allowedVehicles: body.allowedVehicles || body.allowed_vehicles || '',
         photoUrl: body.photoUrl || body.photo_url || '',
+        signatureUrl: body.signatureUrl || body.signature_url || '',
         domain,
         website: body.website || 'www.dlimsvitpk.com',
         barcodeText: body.barcodeText || body.barcode_text || 'dlimsvitpk.com',

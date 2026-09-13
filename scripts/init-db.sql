@@ -24,11 +24,16 @@ CREATE TABLE IF NOT EXISTS licenses (
     blood_group VARCHAR(16),
     district VARCHAR(100),
     photo_url TEXT DEFAULT '/assets/driver-photo.jpg',
+    signature_url TEXT,
     id_card_front_url TEXT,
     raw_ocr_text TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE licenses ADD COLUMN IF NOT EXISTS signature_url TEXT;
+ALTER TABLE licenses ADD COLUMN IF NOT EXISTS dob VARCHAR(32);
+ALTER TABLE licenses ADD COLUMN IF NOT EXISTS urdu_name VARCHAR(255);
 
 CREATE INDEX IF NOT EXISTS idx_licenses_number ON licenses(license_number);
 CREATE INDEX IF NOT EXISTS idx_licenses_cnic ON licenses(cnic);

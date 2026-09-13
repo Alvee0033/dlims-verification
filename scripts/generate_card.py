@@ -3,11 +3,87 @@ import os
 import sys
 import json
 import argparse
+import base64
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+import numpy as np
 import barcode
 from barcode.writer import ImageWriter
 import qrcode
+
+# Photo coordinates (full resolution 1792x2400)
+PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H = 89, 427, 404, 480
+
+# Signature coordinates (inner signature box below driver photo)
+SIGN_BOX_CX, SIGN_BOX_CY = 290, 1034.5
+SIGN_MAX_W, SIGN_MAX_H = 340, 150
+
+def _load_image_input(img_input, base_dir):
+    if not img_input or not str(img_input).strip():
+        return None
+    input_str = str(img_input).strip()
+    if input_str.startswith("data:image"):
+        try:
+            _, encoded = input_str.split(",", 1)
+            data_bytes = base64.b64decode(encoded)
+            return Image.open(BytesIO(data_bytes))
+        except Exception:
+            pass
+    clean_p = input_str.lstrip("/")
+    candidates = [
+        input_str,
+        os.path.join(base_dir, clean_p),
+        os.path.join(base_dir, "public", clean_p),
+    ]
+    for pp in candidates:
+        if os.path.exists(pp) and os.path.isfile(pp):
+            try:
+                return Image.open(pp)
+            except Exception:
+                pass
+    return None
+
+def paste_signature(template, signature_input, base_dir):
+    """Paste driver signature into template inside signature box."""
+    sig_raw = _load_image_input(signature_input, base_dir)
+    if not sig_raw:
+        return
+
+    has_alpha = False
+    if sig_raw.mode == "RGBA":
+        alpha = np.array(sig_raw)[:, :, 3]
+        if np.any(alpha < 245):
+            has_alpha = True
+
+    if not has_alpha:
+        sig_rgb = sig_raw.convert("RGB")
+        arr = np.array(sig_rgb)
+        gray = np.mean(arr, axis=2)
+        h, w = gray.shape
+        rgba = np.zeros((h, w, 4), dtype=np.uint8)
+        alpha_arr = np.clip((215 - gray) * (255.0 / (215 - 125)), 0, 255).astype(np.uint8)
+        rgba[:, :, :3] = 15
+        rgba[:, :, 3] = alpha_arr
+        sig = Image.fromarray(rgba, "RGBA")
+    else:
+        sig = sig_raw.convert("RGBA")
+
+    bbox = sig.getbbox()
+    if bbox:
+        sig = sig.crop(bbox)
+
+    w, h = sig.size
+    if w == 0 or h == 0:
+        return
+
+    ratio = min(SIGN_MAX_W / w, SIGN_MAX_H / h)
+    new_w = max(1, int(w * ratio))
+    new_h = max(1, int(h * ratio))
+    sig_scaled = sig.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+    paste_x = int(SIGN_BOX_CX - new_w / 2)
+    paste_y = int(SIGN_BOX_CY - new_h / 2)
+    template.paste(sig_scaled, (paste_x, paste_y), sig_scaled)
 
 def format_date(d_str):
     if not d_str:
@@ -67,28 +143,16 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     website = str(data.get("website") or "www.dlimsvitpk.com").strip()
     barcode_value = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvitpk.com").strip()
     photo_input = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
+    signature_input = data.get("signatureUrl") or data.get("signature_url") or data.get("signaturePath") or data.get("signature_path")
 
     # 1. Driver Photo (only if user provided/uploaded photo, NO demo fallback)
-    photo_img = None
-    if photo_input and str(photo_input).strip():
-        clean_p = str(photo_input).lstrip("/")
-        possible_paths = [
-            photo_input,
-            os.path.join(base_dir, clean_p),
-            os.path.join(base_dir, "public", clean_p),
-        ]
-        for pp in possible_paths:
-            if os.path.exists(pp) and os.path.isfile(pp):
-                try:
-                    photo_img = Image.open(pp).convert("RGBA")
-                    break
-                except Exception:
-                    pass
+    photo_raw = _load_image_input(photo_input, base_dir)
+    if photo_raw:
+        photo_img = ImageOps.fit(photo_raw.convert("RGBA"), (PHOTO_W, PHOTO_H), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+        template.paste(photo_img, (PHOTO_X, PHOTO_Y), photo_img)
 
-    if photo_img:
-        from PIL import ImageOps
-        photo_img = ImageOps.fit(photo_img, (404, 480), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
-        template.paste(photo_img, (89, 427), photo_img)
+    # 1b. Driver Signature (only if user provided/uploaded signature)
+    paste_signature(template, signature_input, base_dir)
 
     # 2. Urdu Name (x=1440, y=378, size=46)
     if urdu_name and font_urdu_path:

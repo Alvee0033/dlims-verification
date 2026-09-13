@@ -81,6 +81,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       blood_group: body.blood_group !== undefined ? body.blood_group : existing.blood_group,
       district: body.district !== undefined ? body.district : existing.district,
       photo_url: body.photo_url ?? existing.photo_url,
+      signature_url: body.signature_url !== undefined ? body.signature_url : (body.signatureUrl !== undefined ? body.signatureUrl : existing.signature_url),
       id_card_front_url: body.id_card_front_url !== undefined ? body.id_card_front_url : existing.id_card_front_url,
       dob: body.dob !== undefined ? body.dob : existing.dob,
       urdu_name: (body.urdu_name !== undefined ? body.urdu_name : (body.urduName !== undefined ? body.urduName : existing.urdu_name)),
