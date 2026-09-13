@@ -120,7 +120,7 @@ export default function NewLicensePage() {
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<'pdf' | 'png' | null>(null);
 
-  // Manual card preview — only called when user clicks "Preview Card"
+  // Auto & manual card preview (ultra-fast ~100ms via persistent daemon)
   const refreshCardPreview = async (dataToRender = formData) => {
     setGeneratingPreview(true);
     try {
@@ -142,6 +142,45 @@ export default function NewLicensePage() {
       setGeneratingPreview(false);
     }
   };
+
+  // Initial preview on mount
+  useEffect(() => {
+    refreshCardPreview({
+      ...formData,
+      name: formData.name || 'GHULAM MURTAZA',
+      urduName: formData.urduName || 'غلام مرتضیٰ',
+      licenseNumber: formData.licenseNumber || '1280012281',
+      cnic: formData.cnic || '32402-8423273-1',
+      dob: formData.dob || '1998-04-22',
+      issueDate: formData.issueDate || '2018-07-14',
+      expiryDate: formData.expiryDate || '2028-07-14',
+      address: formData.address || 'dakh khana khas teh distt Dera ghazi Khan',
+      bloodGroup: formData.bloodGroup || 'A+',
+    });
+  }, []);
+
+  // Real-time debounced preview (250ms debounce, seamless background sync)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.name || formData.licenseNumber || formData.cnic) {
+        refreshCardPreview(formData);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [
+    formData.name,
+    formData.urduName,
+    formData.fatherName,
+    formData.dob,
+    formData.cnic,
+    formData.licenseNumber,
+    formData.issueDate,
+    formData.expiryDate,
+    formData.address,
+    formData.bloodGroup,
+    formData.allowedVehicles,
+    formData.photoUrl,
+  ]);
 
   // Download PDF or PNG
   const handleDownloadCard = async (format: 'pdf' | 'png') => {
@@ -816,9 +855,15 @@ export default function NewLicensePage() {
                   </span>
                 </div>
                 <div className="d-flex align-items-center gap-1">
-                  <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 small">
-                    300 DPI High-Res
-                  </span>
+                  {generatingPreview ? (
+                    <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 small">
+                      <i className="fas fa-spinner fa-spin me-1"></i>Syncing...
+                    </span>
+                  ) : (
+                    <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 small">
+                      <i className="fas fa-check-circle me-1"></i>Live Preview
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => refreshCardPreview(formData)}
@@ -838,11 +883,11 @@ export default function NewLicensePage() {
               >
                 {generatingPreview && (
                   <div
-                    className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white bg-opacity-75"
-                    style={{ zIndex: 10 }}
+                    className="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white px-2 py-1 shadow-sm"
+                    style={{ zIndex: 10, fontSize: '0.72rem' }}
                   >
-                    <span className="spinner-border spinner-border-sm text-success mb-1" role="status" />
-                    <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Rendering Card &amp; Barcode...</span>
+                    <span className="spinner-border spinner-border-sm me-1" style={{ width: '10px', height: '10px' }} />
+                    Syncing...
                   </div>
                 )}
 
@@ -858,7 +903,7 @@ export default function NewLicensePage() {
                     <i className="fas fa-id-card fa-3x mb-2 text-secondary opacity-50"></i>
                     <div className="small fw-semibold">License Card Preview</div>
                     <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                      Click &quot;Preview Card&quot; below to generate.
+                      Generating live preview...
                     </div>
                   </div>
                 )}

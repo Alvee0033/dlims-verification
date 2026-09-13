@@ -67,7 +67,7 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     website = str(data.get("website") or "dlims.punjab.gov.pk").strip()
     photo_input = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
 
-    # 1. Driver Photo (target: x=78, y=434, w=436, h=454)
+    # 1. Driver Photo (exact target: x=89, y=427, w=404, h=480)
     photo_img = None
     if photo_input:
         clean_p = photo_input.lstrip("/")
@@ -91,8 +91,9 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
             photo_img = Image.open(fallback).convert("RGBA")
 
     if photo_img:
-        photo_img = photo_img.resize((436, 454), Image.Resampling.LANCZOS)
-        template.paste(photo_img, (78, 434), photo_img)
+        from PIL import ImageOps
+        photo_img = ImageOps.fit(photo_img, (404, 480), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+        template.paste(photo_img, (89, 427), photo_img)
 
     # 2. Urdu Name (x=1440, y=378, size=46)
     if urdu_name and font_urdu_path:

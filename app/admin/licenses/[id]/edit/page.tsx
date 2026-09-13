@@ -93,12 +93,37 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
             photo_url: data.license.photo_url || '/assets/driver-photo.jpg',
           };
           setFormData(loaded);
-          // No auto-preview on load — user clicks "Preview Card" manually
+          refreshCardPreview(loaded);
         }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  // Real-time debounced preview (250ms debounce, smooth background sync)
+  useEffect(() => {
+    if (loading) return;
+    const timer = setTimeout(() => {
+      if (formData.name || formData.license_number) {
+        refreshCardPreview(formData);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [
+    formData.name,
+    formData.urdu_name,
+    formData.father_name,
+    formData.dob,
+    formData.cnic,
+    formData.license_number,
+    formData.issue_date,
+    formData.expiry_date,
+    formData.address,
+    formData.blood_group,
+    formData.allowed_vehicles,
+    formData.photo_url,
+    loading,
+  ]);
 
   // Download PDF or PNG
   const handleDownloadCard = async (format: 'pdf' | 'png') => {
@@ -543,9 +568,15 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
                 </span>
               </div>
               <div className="d-flex align-items-center gap-1">
-                <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 small">
-                  300 DPI High-Res
-                </span>
+                {generatingPreview ? (
+                  <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 small">
+                    <i className="fas fa-spinner fa-spin me-1"></i>Syncing...
+                  </span>
+                ) : (
+                  <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 small">
+                    <i className="fas fa-check-circle me-1"></i>Live Preview
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => refreshCardPreview(formData)}
@@ -565,11 +596,11 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
             >
               {generatingPreview && (
                 <div
-                  className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white bg-opacity-75"
-                  style={{ zIndex: 10 }}
+                  className="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white px-2 py-1 shadow-sm"
+                  style={{ zIndex: 10, fontSize: '0.72rem' }}
                 >
-                  <span className="spinner-border spinner-border-sm text-success mb-1" role="status" />
-                  <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Rendering Card &amp; Barcode...</span>
+                  <span className="spinner-border spinner-border-sm me-1" style={{ width: '10px', height: '10px' }} />
+                  Syncing...
                 </div>
               )}
 
@@ -585,7 +616,7 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
                   <i className="fas fa-id-card fa-3x mb-2 text-secondary opacity-50"></i>
                   <div className="small fw-semibold">License Card Preview</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                    Click &quot;Preview Card&quot; below to generate.
+                    Loading preview...
                   </div>
                 </div>
               )}

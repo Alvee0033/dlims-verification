@@ -25,13 +25,41 @@ export interface CardData {
   photo_url?: string | null;
   website?: string | null;
   domain?: string | null;
+  preview?: boolean;
 }
 
-// ─── Persistent daemon singleton ─────────────────────────────────────────────
+// ─── Direct Fallback (Guaranteed to work if daemon is ever busy/restarting) ───
+function runDirectScript(data: CardData, format: 'png' | 'pdf' = 'png'): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(process.cwd(), 'scripts', 'generate_card.py');
+    const py = spawn('python3', [scriptPath, '--format', format]);
+
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+
+    py.stdout.on('data', (chunk) => stdoutChunks.push(Buffer.from(chunk)));
+    py.stderr.on('data', (chunk) => stderrChunks.push(Buffer.from(chunk)));
+
+    py.on('error', (err) => reject(err));
+
+    py.on('close', (code) => {
+      if (code !== 0) {
+        const stderr = Buffer.concat(stderrChunks).toString('utf-8');
+        return reject(new Error(`Direct generator failed (exit ${code}): ${stderr}`));
+      }
+      resolve(Buffer.concat(stdoutChunks));
+    });
+
+    py.stdin.write(JSON.stringify(data));
+    py.stdin.end();
+  });
+}
+
+// ─── Persistent Daemon Singleton (Instant response) ──────────────────────────
 let daemonProc: ChildProcess | null = null;
 let daemonReady = false;
+let daemonStarting = false;
 let daemonQueue: Array<{ resolve: (v: string) => void; reject: (e: Error) => void }> = [];
-let daemonLineBuffer = '';
 
 function spawnDaemon(): ChildProcess {
   const scriptPath = path.join(process.cwd(), 'scripts', 'card_daemon.py');
@@ -45,9 +73,9 @@ function spawnDaemon(): ChildProcess {
       const msg = JSON.parse(trimmed);
       if (msg.ready) {
         daemonReady = true;
+        daemonStarting = false;
         return;
       }
-      // Deliver to next waiter in queue
       const waiter = daemonQueue.shift();
       if (waiter) {
         if (msg.ok) {
@@ -56,8 +84,8 @@ function spawnDaemon(): ChildProcess {
           waiter.reject(new Error(msg.error || 'Card daemon error'));
         }
       }
-    } catch (e) {
-      // Ignore unparseable lines (e.g. warnings)
+    } catch {
+      // Ignore non-json lines
     }
   });
 
@@ -65,32 +93,30 @@ function spawnDaemon(): ChildProcess {
     process.stderr.write(`[card_daemon] ${chunk}`);
   });
 
-  proc.on('exit', (code) => {
-    console.error(`[card-generator] daemon exited with code ${code}, will respawn on next request`);
+  proc.on('exit', () => {
     daemonProc = null;
     daemonReady = false;
-    // Reject all pending waiters
+    daemonStarting = false;
     const pending = daemonQueue.splice(0);
-    pending.forEach((w) => w.reject(new Error('Card daemon crashed, please retry')));
+    pending.forEach((w) => w.reject(new Error('Daemon exited')));
   });
 
   return proc;
 }
 
-function getDaemon(): Promise<ChildProcess> {
-  return new Promise((resolve, reject) => {
+function getDaemon(): Promise<ChildProcess | null> {
+  return new Promise((resolve) => {
     if (daemonProc && daemonReady) {
       return resolve(daemonProc);
     }
-
-    // Spawn new daemon
-    daemonProc = spawnDaemon();
+    if (!daemonStarting) {
+      daemonStarting = true;
+      daemonProc = spawnDaemon();
+    }
     const proc = daemonProc;
-
-    // Wait up to 15 seconds for the daemon to signal ready
     const timeout = setTimeout(() => {
-      reject(new Error('Card daemon startup timed out'));
-    }, 15_000);
+      resolve(null); // Timeout fallback to direct script
+    }, 2500);
 
     const poll = setInterval(() => {
       if (daemonReady) {
@@ -98,32 +124,50 @@ function getDaemon(): Promise<ChildProcess> {
         clearTimeout(timeout);
         resolve(proc);
       }
-    }, 50);
+    }, 30);
   });
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 export async function generateCardBuffer(
   data: CardData,
-  format: 'png' | 'pdf' = 'png'
+  format: 'png' | 'pdf' = 'png',
+  preview: boolean = false
 ): Promise<Buffer> {
-  const proc = await getDaemon();
+  try {
+    const proc = await getDaemon();
+    if (proc && daemonReady) {
+      return await new Promise<Buffer>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          // If daemon hangs on this request, reject so fallback kicks in
+          reject(new Error('Daemon request timeout'));
+        }, 3000);
 
-  return new Promise((resolve, reject) => {
-    daemonQueue.push({
-      resolve: (line) => {
-        try {
-          const msg = JSON.parse(line);
-          const buf = Buffer.from(msg.data, 'base64');
-          resolve(buf);
-        } catch (e) {
-          reject(new Error('Failed to decode card daemon response'));
-        }
-      },
-      reject,
-    });
+        daemonQueue.push({
+          resolve: (line) => {
+            clearTimeout(timeout);
+            try {
+              const msg = JSON.parse(line);
+              const buf = Buffer.from(msg.data, 'base64');
+              resolve(buf);
+            } catch (e) {
+              reject(new Error('Failed to decode card daemon response'));
+            }
+          },
+          reject: (err) => {
+            clearTimeout(timeout);
+            reject(err);
+          },
+        });
 
-    const payload = JSON.stringify({ ...data, format }) + '\n';
-    proc.stdin!.write(payload);
-  });
+        const payload = JSON.stringify({ ...data, format, preview }) + '\n';
+        proc.stdin!.write(payload);
+      });
+    }
+  } catch (err) {
+    console.warn('[card-generator] Daemon failed, falling back to direct Python process:', err);
+  }
+
+  // Fallback to direct script execution
+  return runDirectScript(data, format);
 }

@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
         photoUrl: body.photoUrl || body.photo_url || '/assets/driver-photo.jpg',
         domain,
       },
-      format
+      format,
+      isPreview
     );
 
     if (isPreview) {

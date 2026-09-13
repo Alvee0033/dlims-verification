@@ -1,5 +1,17 @@
 @import './admin/admin.css';
 
+@font-face {
+  font-family: 'Arimo';
+  src: url('/assets/fonts/Arimo-Bold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'NotoNastaliqUrdu';
+  src: url('/assets/fonts/NotoNastaliqUrdu-Regular.ttf') format('truetype');
+  font-weight: normal;
+}
+
 /* Exact replica of styles from https://dlimsvitp.com/ */
 
 :root {
