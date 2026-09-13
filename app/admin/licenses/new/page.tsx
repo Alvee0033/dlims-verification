@@ -736,7 +736,6 @@ export default function NewLicensePage() {
                           type="file"
                           id="driverPhotoFileInput"
                           accept="image/*"
-                          capture="user"
                           onChange={handlePhotoUpload}
                           className="d-none"
                         />

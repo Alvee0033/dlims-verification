@@ -469,7 +469,6 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
                         type="file"
                         id="editDriverPhotoInput"
                         accept="image/*"
-                        capture="user"
                         onChange={handlePhotoUpload}
                         className="d-none"
                       />
