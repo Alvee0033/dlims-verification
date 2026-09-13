@@ -156,17 +156,8 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     # 2. Urdu Name (safe right boundary x=1500, expands to the left, y=378)
     if urdu_name and font_urdu_path:
         try:
-            current_size = 46
-            f_urdu = ImageFont.truetype(font_urdu_path, current_size)
-            bbox = draw.textbbox((0, 0), urdu_name, font=f_urdu)
-            text_w = bbox[2] - bbox[0]
-            while text_w > 670 and current_size > 28:
-                current_size -= 2
-                f_urdu = ImageFont.truetype(font_urdu_path, current_size)
-                bbox = draw.textbbox((0, 0), urdu_name, font=f_urdu)
-                text_w = bbox[2] - bbox[0]
-            urdu_x = 1500 - text_w
-            draw.text((urdu_x, 378), urdu_name, font=f_urdu, fill=DARK)
+            f_urdu = ImageFont.truetype(font_urdu_path, 46)
+            draw.text((1500, 378), urdu_name, font=f_urdu, fill=DARK, direction="rtl", language="urd", anchor="ra")
         except Exception as e:
             sys.stderr.write(f"Urdu text rendering error: {e}\n")
 

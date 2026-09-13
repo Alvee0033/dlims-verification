@@ -218,20 +218,10 @@ def generate_card(data, output_format="png", preview=False):
     # 1b. Driver signature (exact sign box below photo)
     paste_signature(template, signature_input, scale)
 
-    # 2. Urdu name (safe right boundary at s(1500), expands to the left)
-    if urdu_name and fonts["urdu"] and FONT_URDU_PATH:
+    # 2. Urdu name (safe right boundary at s(1500), expands to the left, y=378)
+    if urdu_name and fonts["urdu"]:
         try:
-            current_size = 46
-            f_u = fonts["urdu"]
-            bbox = draw.textbbox((0, 0), urdu_name, font=f_u)
-            text_w = bbox[2] - bbox[0]
-            while text_w > s(670) and current_size > 28:
-                current_size -= 2
-                f_u = ImageFont.truetype(FONT_URDU_PATH, max(1, int(current_size * scale)))
-                bbox = draw.textbbox((0, 0), urdu_name, font=f_u)
-                text_w = bbox[2] - bbox[0]
-            urdu_x = s(1500) - text_w
-            draw.text((urdu_x, s(378)), urdu_name, font=f_u, fill=DARK)
+            draw.text((s(1500), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, direction="rtl", language="urd", anchor="ra")
         except Exception as e:
             sys.stderr.write(f"Urdu text error: {e}\n")
 
