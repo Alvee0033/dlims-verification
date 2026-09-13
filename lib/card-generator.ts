@@ -60,10 +60,23 @@ function runDirectScript(data: CardData, format: 'png' | 'pdf' = 'png'): Promise
 }
 
 // ─── Persistent Daemon Singleton (Instant response) ──────────────────────────
-let daemonProc: ChildProcess | null = null;
-let daemonReady = false;
-let daemonStarting = false;
-let daemonQueue: Array<{ resolve: (v: string) => void; reject: (e: Error) => void }> = [];
+interface DaemonState {
+  proc: ChildProcess | null;
+  ready: boolean;
+  starting: boolean;
+  queue: Array<{ resolve: (v: string) => void; reject: (e: Error) => void }>;
+}
+
+const g = globalThis as unknown as { __CARD_DAEMON_STATE__?: DaemonState };
+if (!g.__CARD_DAEMON_STATE__) {
+  g.__CARD_DAEMON_STATE__ = {
+    proc: null,
+    ready: false,
+    starting: false,
+    queue: [],
+  };
+}
+const daemonState = g.__CARD_DAEMON_STATE__;
 
 function spawnDaemon(): ChildProcess {
   const scriptPath = path.join(process.cwd(), 'scripts', 'card_daemon.py');
@@ -76,11 +89,11 @@ function spawnDaemon(): ChildProcess {
     try {
       const msg = JSON.parse(trimmed);
       if (msg.ready) {
-        daemonReady = true;
-        daemonStarting = false;
+        daemonState.ready = true;
+        daemonState.starting = false;
         return;
       }
-      const waiter = daemonQueue.shift();
+      const waiter = daemonState.queue.shift();
       if (waiter) {
         if (msg.ok) {
           waiter.resolve(trimmed);
@@ -98,37 +111,43 @@ function spawnDaemon(): ChildProcess {
   });
 
   proc.on('exit', () => {
-    daemonProc = null;
-    daemonReady = false;
-    daemonStarting = false;
-    const pending = daemonQueue.splice(0);
+    daemonState.proc = null;
+    daemonState.ready = false;
+    daemonState.starting = false;
+    const pending = daemonState.queue.splice(0);
     pending.forEach((w) => w.reject(new Error('Daemon exited')));
   });
 
   return proc;
 }
 
+// Eagerly boot daemon on process startup so it is hot and instant for all incoming requests
+if (!daemonState.proc && !daemonState.starting) {
+  daemonState.starting = true;
+  daemonState.proc = spawnDaemon();
+}
+
 function getDaemon(): Promise<ChildProcess | null> {
   return new Promise((resolve) => {
-    if (daemonProc && daemonReady) {
-      return resolve(daemonProc);
+    if (daemonState.proc && daemonState.ready) {
+      return resolve(daemonState.proc);
     }
-    if (!daemonStarting) {
-      daemonStarting = true;
-      daemonProc = spawnDaemon();
+    if (!daemonState.starting) {
+      daemonState.starting = true;
+      daemonState.proc = spawnDaemon();
     }
-    const proc = daemonProc;
+    const proc = daemonState.proc;
     const timeout = setTimeout(() => {
       resolve(null); // Timeout fallback to direct script
-    }, 2500);
+    }, 8000);
 
     const poll = setInterval(() => {
-      if (daemonReady) {
+      if (daemonState.ready) {
         clearInterval(poll);
         clearTimeout(timeout);
         resolve(proc);
       }
-    }, 30);
+    }, 20);
   });
 }
 
@@ -140,14 +159,13 @@ export async function generateCardBuffer(
 ): Promise<Buffer> {
   try {
     const proc = await getDaemon();
-    if (proc && daemonReady) {
+    if (proc && daemonState.ready) {
       return await new Promise<Buffer>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          // If daemon hangs on this request, reject so fallback kicks in
           reject(new Error('Daemon request timeout'));
-        }, 3000);
+        }, 8000);
 
-        daemonQueue.push({
+        daemonState.queue.push({
           resolve: (line) => {
             clearTimeout(timeout);
             try {

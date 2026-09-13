@@ -41,29 +41,6 @@ def _load_image_input(img_input, base_dir):
             except Exception:
                 pass
 
-    if input_str.startswith("http://") or input_str.startswith("https://"):
-        try:
-            import urllib.request
-            req = urllib.request.Request(input_str, headers={'User-Agent': 'DLIMS-Card/1.0'})
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                return Image.open(BytesIO(resp.read()))
-        except Exception:
-            pass
-
-    if "uploads/" in input_str:
-        filename = os.path.basename(clean_p)
-        for port in [3000, 3001]:
-            try:
-                import urllib.request
-                url = f"http://127.0.0.1:{port}/uploads/{filename}"
-                req = urllib.request.Request(url, headers={'User-Agent': 'DLIMS-Card/1.0'})
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    data_bytes = resp.read()
-                    if data_bytes:
-                        return Image.open(BytesIO(data_bytes))
-            except Exception:
-                pass
-
     return None
 
 def paste_signature(template, signature_input, base_dir):

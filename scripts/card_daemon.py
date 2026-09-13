@@ -25,8 +25,13 @@ RED  = (161, 44, 47, 255)
 
 # ── Pre-load template & fonts at startup ─────────────────────────────────────
 TEMPLATE_PATH = os.path.join(BASE_DIR, "assets", "templer.png")
-_template_base      = Image.open(TEMPLATE_PATH).convert("RGBA")   # full 1792×2400
-_template_base_half = _template_base.resize((896, 1200), Image.Resampling.LANCZOS)  # preview 50%
+TEMPLATE_PREVIEW_PATH = os.path.join(BASE_DIR, "assets", "templer_preview.png")
+
+_template_base = Image.open(TEMPLATE_PATH).convert("RGBA")   # full 1792×2400
+if os.path.exists(TEMPLATE_PREVIEW_PATH):
+    _template_base_half = Image.open(TEMPLATE_PREVIEW_PATH).convert("RGBA")  # instant preview 50%
+else:
+    _template_base_half = _template_base.resize((896, 1200), Image.Resampling.BILINEAR)
 
 def _find_font(candidates):
     return next((p for p in candidates if os.path.exists(p)), None)
@@ -98,29 +103,6 @@ def _load_image_input(img_input):
         if os.path.exists(pp) and os.path.isfile(pp):
             try:
                 return Image.open(pp)
-            except Exception:
-                pass
-
-    if input_str.startswith("http://") or input_str.startswith("https://"):
-        try:
-            import urllib.request
-            req = urllib.request.Request(input_str, headers={'User-Agent': 'DLIMS-Card/1.0'})
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                return Image.open(BytesIO(resp.read()))
-        except Exception:
-            pass
-
-    if "uploads/" in input_str:
-        filename = os.path.basename(clean_p)
-        for port in [3000, 3001]:
-            try:
-                import urllib.request
-                url = f"http://127.0.0.1:{port}/uploads/{filename}"
-                req = urllib.request.Request(url, headers={'User-Agent': 'DLIMS-Card/1.0'})
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    data_bytes = resp.read()
-                    if data_bytes:
-                        return Image.open(BytesIO(data_bytes))
             except Exception:
                 pass
 

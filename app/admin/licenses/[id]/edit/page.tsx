@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ImageCropperModal from '@/components/ImageCropperModal';
@@ -56,15 +56,24 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<'pdf' | 'png' | null>(null);
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const previewAbortRef = useRef<AbortController | null>(null);
 
   // Manual card preview — only called when user clicks "Preview Card"
   const refreshCardPreview = async (dataToRender = formData) => {
     if (!dataToRender.name && !dataToRender.license_number) return;
+
+    if (previewAbortRef.current) {
+      previewAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
+
     setGeneratingPreview(true);
     try {
       const res = await fetch('/api/admin/card-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           name: dataToRender.name,
           urdu_name: dataToRender.urdu_name,
@@ -86,10 +95,13 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
       if (json.success && json.imageBase64) {
         setCardPreviewUri(json.imageBase64);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.error('Failed to generate card preview:', err);
     } finally {
-      setGeneratingPreview(false);
+      if (previewAbortRef.current === controller) {
+        setGeneratingPreview(false);
+      }
     }
   };
 

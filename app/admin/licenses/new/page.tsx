@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ImageCropperModal from '@/components/ImageCropperModal';
@@ -143,14 +143,22 @@ export default function NewLicensePage() {
   const [cardPreviewUri, setCardPreviewUri] = useState<string | null>(null);
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<'pdf' | 'png' | null>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
 
-  // Auto & manual card preview (ultra-fast ~100ms via persistent daemon)
+  // Auto & manual card preview (ultra-fast, instant with abort and debounce)
   const refreshCardPreview = async (dataToRender = formData) => {
+    if (previewAbortRef.current) {
+      previewAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
+
     setGeneratingPreview(true);
     try {
       const res = await fetch('/api/admin/card-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           ...dataToRender,
           preview: true,
@@ -160,23 +168,26 @@ export default function NewLicensePage() {
       if (json.success && json.imageBase64) {
         setCardPreviewUri(json.imageBase64);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.error('Failed to generate card preview:', err);
     } finally {
-      setGeneratingPreview(false);
+      if (previewAbortRef.current === controller) {
+        setGeneratingPreview(false);
+      }
     }
   };
 
-  // Initial preview on mount (renders clean blank card template with no fake person data)
+  // Initial preview on mount
   useEffect(() => {
     refreshCardPreview(formData);
   }, []);
 
-  // Real-time debounced preview (200ms debounce, smooth background sync)
+  // Real-time debounced preview (350ms debounce with cancellation of obsolete requests)
   useEffect(() => {
     const timer = setTimeout(() => {
       refreshCardPreview(formData);
-    }, 200);
+    }, 350);
     return () => clearTimeout(timer);
   }, [
     formData.name,
