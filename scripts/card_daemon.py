@@ -324,6 +324,8 @@ def generate_card(data, output_format="png", preview=False):
             # Upscale back to full res for PDF
             template = template.resize((1792, 2400), Image.Resampling.LANCZOS)
         template.convert("RGB").save(out, "PDF", resolution=300.0)
+    elif preview or fmt in ("jpeg", "jpg"):
+        template.convert("RGB").save(out, "JPEG", quality=85, optimize=False)
     else:
         template.save(out, "PNG", optimize=False, compress_level=1)  # fast save
     return out.getvalue()
@@ -343,7 +345,12 @@ def main():
             is_preview = bool(req.get("preview", False))
             raw = generate_card(req, output_format=fmt, preview=is_preview)
             b64 = base64.b64encode(raw).decode("utf-8")
-            mime = "application/pdf" if fmt == "pdf" else "image/png"
+            if fmt == "pdf":
+                mime = "application/pdf"
+            elif is_preview or fmt in ("jpeg", "jpg"):
+                mime = "image/jpeg"
+            else:
+                mime = "image/png"
             sys.stdout.write(json.dumps({"ok": True, "data": b64, "mime": mime}) + "\n")
         except Exception as e:
             sys.stdout.write(json.dumps({"ok": False, "error": str(e)}) + "\n")
