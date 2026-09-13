@@ -284,17 +284,18 @@ def generate_card(data, output_format="png", preview=False):
         if clean_cnic:
             draw.text((s(1275), s(1303)), clean_cnic,     font=fonts["fields"], fill=DARK)
         if license_number and FONT_ARIMO_PATH:
-            lic_font = fonts["fields"]
-            bbox = lic_font.getbbox(license_number) if lic_font else (0, 0, 0, 0)
-            text_w = bbox[2] - bbox[0]
             current_size = 62
-            while text_w > s(420) and current_size > 36:
+            lic_font = ImageFont.truetype(FONT_ARIMO_PATH, max(1, int(current_size * scale)))
+            bbox = lic_font.getbbox(license_number)
+            text_w = bbox[2] - bbox[0]
+            lic_x = s(515)
+            max_right = s(940)
+            while (lic_x + text_w) > max_right and current_size > 36:
                 current_size -= 2
                 lic_font = ImageFont.truetype(FONT_ARIMO_PATH, max(1, int(current_size * scale)))
                 bbox = lic_font.getbbox(license_number)
                 text_w = bbox[2] - bbox[0]
-            lic_x = max(s(890) - text_w, s(470))
-            draw.text((lic_x, s(1454)), license_number, font=lic_font, fill=DARK)
+            draw.text((lic_x, s(1448)), license_number, font=lic_font, fill=DARK)
         if blood_group:
             draw.text((s(1371), s(1530)), blood_group,    font=fonts["fields"], fill=DARK)
         if vehicles:
