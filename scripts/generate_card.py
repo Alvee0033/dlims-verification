@@ -255,9 +255,17 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
         )
         qr.add_data(qr_url)
         qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+        qr_img = qr.make_image(fill_color="black", back_color="transparent").convert("RGBA")
+        datas = qr_img.getdata()
+        new_data = []
+        for item in datas:
+            if item[3] == 0 or (item[0] > 200 and item[1] > 200 and item[2] > 200):
+                new_data.append((255, 255, 255, 0))
+            else:
+                new_data.append(DARK)
+        qr_img.putdata(new_data)
         qr_resized = qr_img.resize((243, 243), Image.Resampling.NEAREST)
-        template.paste(qr_resized, (1488, 1816))
+        template.paste(qr_resized, (1488, 1816), qr_resized)
     except Exception as e:
         sys.stderr.write(f"QR error: {e}\n")
 

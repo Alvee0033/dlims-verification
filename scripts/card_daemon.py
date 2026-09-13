@@ -295,14 +295,22 @@ def generate_card(data, output_format="png", preview=False):
         if vehicles:
             draw.text((s(1000), s(1640)), vehicles,       font=fonts["fields"], fill=DARK)
 
-    # 11. QR code
+    # 11. QR code (transparent background)
     try:
         qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
         qr.add_data(qr_url)
         qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+        qr_img = qr.make_image(fill_color="black", back_color="transparent").convert("RGBA")
+        datas = qr_img.getdata()
+        new_data = []
+        for item in datas:
+            if item[3] == 0 or (item[0] > 200 and item[1] > 200 and item[2] > 200):
+                new_data.append((255, 255, 255, 0))
+            else:
+                new_data.append(DARK)
+        qr_img.putdata(new_data)
         qr_img = qr_img.resize((s(243), s(243)), Image.Resampling.NEAREST)
-        template.paste(qr_img, (s(1488), s(1816)))
+        template.paste(qr_img, (s(1488), s(1816)), qr_img)
     except Exception as e:
         sys.stderr.write(f"QR error: {e}\n")
 
