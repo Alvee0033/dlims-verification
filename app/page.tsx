@@ -156,18 +156,7 @@ export default function Home() {
             </div>
             <span>DLIMS Verification</span>
           </a>
-          <div className="d-flex align-items-center gap-2">
-            {!result && !notFound && (
-              <a
-                href="/admin"
-                className="btn btn-sm btn-outline-success border-0 px-2 py-1 small fw-semibold text-decoration-none"
-                style={{ fontSize: '0.82rem', color: '#0f4c3a' }}
-                title="Official DLIMS Admin Panel"
-              >
-                <i className="fas fa-lock me-1"></i>
-                <span className="d-none d-sm-inline">Admin Portal</span>
-              </a>
-            )}
+          <div className="d-flex align-items-center">
             {(result || notFound) && (
               <a
                 href="#"
