@@ -1,5 +1,6 @@
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
+import { createInterface } from 'readline';
 
 export interface CardData {
   name: string;
@@ -26,31 +27,103 @@ export interface CardData {
   domain?: string | null;
 }
 
-export function generateCardBuffer(
+// ─── Persistent daemon singleton ─────────────────────────────────────────────
+let daemonProc: ChildProcess | null = null;
+let daemonReady = false;
+let daemonQueue: Array<{ resolve: (v: string) => void; reject: (e: Error) => void }> = [];
+let daemonLineBuffer = '';
+
+function spawnDaemon(): ChildProcess {
+  const scriptPath = path.join(process.cwd(), 'scripts', 'card_daemon.py');
+  const proc = spawn('python3', [scriptPath], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+  const rl = createInterface({ input: proc.stdout! });
+  rl.on('line', (line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    try {
+      const msg = JSON.parse(trimmed);
+      if (msg.ready) {
+        daemonReady = true;
+        return;
+      }
+      // Deliver to next waiter in queue
+      const waiter = daemonQueue.shift();
+      if (waiter) {
+        if (msg.ok) {
+          waiter.resolve(trimmed);
+        } else {
+          waiter.reject(new Error(msg.error || 'Card daemon error'));
+        }
+      }
+    } catch (e) {
+      // Ignore unparseable lines (e.g. warnings)
+    }
+  });
+
+  proc.stderr!.on('data', (chunk) => {
+    process.stderr.write(`[card_daemon] ${chunk}`);
+  });
+
+  proc.on('exit', (code) => {
+    console.error(`[card-generator] daemon exited with code ${code}, will respawn on next request`);
+    daemonProc = null;
+    daemonReady = false;
+    // Reject all pending waiters
+    const pending = daemonQueue.splice(0);
+    pending.forEach((w) => w.reject(new Error('Card daemon crashed, please retry')));
+  });
+
+  return proc;
+}
+
+function getDaemon(): Promise<ChildProcess> {
+  return new Promise((resolve, reject) => {
+    if (daemonProc && daemonReady) {
+      return resolve(daemonProc);
+    }
+
+    // Spawn new daemon
+    daemonProc = spawnDaemon();
+    const proc = daemonProc;
+
+    // Wait up to 15 seconds for the daemon to signal ready
+    const timeout = setTimeout(() => {
+      reject(new Error('Card daemon startup timed out'));
+    }, 15_000);
+
+    const poll = setInterval(() => {
+      if (daemonReady) {
+        clearInterval(poll);
+        clearTimeout(timeout);
+        resolve(proc);
+      }
+    }, 50);
+  });
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+export async function generateCardBuffer(
   data: CardData,
   format: 'png' | 'pdf' = 'png'
 ): Promise<Buffer> {
+  const proc = await getDaemon();
+
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(process.cwd(), 'scripts', 'generate_card.py');
-    const py = spawn('python3', [scriptPath, '--format', format]);
-
-    const stdoutChunks: Buffer[] = [];
-    const stderrChunks: Buffer[] = [];
-
-    py.stdout.on('data', (chunk) => stdoutChunks.push(Buffer.from(chunk)));
-    py.stderr.on('data', (chunk) => stderrChunks.push(Buffer.from(chunk)));
-
-    py.on('error', (err) => reject(err));
-
-    py.on('close', (code) => {
-      if (code !== 0) {
-        const stderr = Buffer.concat(stderrChunks).toString('utf-8');
-        return reject(new Error(`Card generator failed (exit ${code}): ${stderr}`));
-      }
-      resolve(Buffer.concat(stdoutChunks));
+    daemonQueue.push({
+      resolve: (line) => {
+        try {
+          const msg = JSON.parse(line);
+          const buf = Buffer.from(msg.data, 'base64');
+          resolve(buf);
+        } catch (e) {
+          reject(new Error('Failed to decode card daemon response'));
+        }
+      },
+      reject,
     });
 
-    py.stdin.write(JSON.stringify(data));
-    py.stdin.end();
+    const payload = JSON.stringify({ ...data, format }) + '\n';
+    proc.stdin!.write(payload);
   });
 }
