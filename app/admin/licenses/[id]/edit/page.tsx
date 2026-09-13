@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ImageCropperModal from '@/components/ImageCropperModal';
 
 export default function EditLicensePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -27,6 +28,27 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
     district: '',
     photo_url: '/assets/driver-photo.jpg',
     signature_url: '',
+  });
+
+  // Interactive Cropper Modal state
+  const [cropperConfig, setCropperConfig] = useState<{
+    isOpen: boolean;
+    imageSrc: string | null;
+    title: string;
+    aspectRatio: number;
+    targetWidth: number;
+    targetHeight: number;
+    isSignature: boolean;
+    type: 'photo' | 'signature';
+  }>({
+    isOpen: false,
+    imageSrc: null,
+    title: '',
+    aspectRatio: 404 / 480,
+    targetWidth: 404,
+    targetHeight: 480,
+    isSignature: false,
+    type: 'photo',
   });
 
   // Card Preview & Generator state
@@ -179,62 +201,94 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setUploadingPhoto(true);
-      try {
-        const data = new FormData();
-        data.append('photo', file);
-
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: data,
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCropperConfig({
+          isOpen: true,
+          imageSrc: reader.result as string,
+          title: 'Adjust & Crop Driver Photo (404 x 480)',
+          aspectRatio: 404 / 480,
+          targetWidth: 404,
+          targetHeight: 480,
+          isSignature: false,
+          type: 'photo',
         });
-
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to upload photo');
-        }
-
-        const newPhotoUrl = json.url;
-        setFormData((prev) => ({ ...prev, photo_url: newPhotoUrl }));
-        refreshCardPreview({ ...formData, photo_url: newPhotoUrl });
-      } catch (err: any) {
-        alert(err.message || 'Error uploading photo');
-      } finally {
-        setUploadingPhoto(false);
-      }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
     }
   };
 
-  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setUploadingSignature(true);
-      try {
-        const data = new FormData();
-        data.append('signature', file);
-
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: data,
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCropperConfig({
+          isOpen: true,
+          imageSrc: reader.result as string,
+          title: 'Adjust & Crop Driver Signature',
+          aspectRatio: 340 / 150,
+          targetWidth: 680,
+          targetHeight: 300,
+          isSignature: true,
+          type: 'signature',
         });
-
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to upload signature');
-        }
-
-        const newSignatureUrl = json.url;
-        setFormData((prev) => ({ ...prev, signature_url: newSignatureUrl }));
-        refreshCardPreview({ ...formData, signature_url: newSignatureUrl });
-      } catch (err: any) {
-        alert(err.message || 'Error uploading signature');
-      } finally {
-        setUploadingSignature(false);
-      }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
     }
+  };
+
+  const handleCropComplete = async (blob: Blob, _previewUrl: string) => {
+    const isSig = cropperConfig.type === 'signature';
+    if (isSig) {
+      setUploadingSignature(true);
+    } else {
+      setUploadingPhoto(true);
+    }
+
+    setCropperConfig((prev) => ({ ...prev, isOpen: false, imageSrc: null }));
+
+    try {
+      const data = new FormData();
+      if (isSig) {
+        data.append('signature', blob, 'signature.png');
+      } else {
+        data.append('photo', blob, 'driver_photo.jpg');
+      }
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: data,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to upload image');
+      }
+
+      const newUrl = json.url;
+      if (isSig) {
+        setFormData((prev) => ({ ...prev, signature_url: newUrl }));
+        refreshCardPreview({ ...formData, signature_url: newUrl });
+      } else {
+        setFormData((prev) => ({ ...prev, photo_url: newUrl }));
+        refreshCardPreview({ ...formData, photo_url: newUrl });
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error uploading cropped image');
+    } finally {
+      setUploadingPhoto(false);
+      setUploadingSignature(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropperConfig((prev) => ({ ...prev, isOpen: false, imageSrc: null }));
   };
 
   const handleVehicleToggle = (vehicleClass: string) => {
@@ -807,6 +861,19 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </div>
+
+      {/* Interactive Image Cropping Modal */}
+      <ImageCropperModal
+        isOpen={cropperConfig.isOpen}
+        imageSrc={cropperConfig.imageSrc}
+        title={cropperConfig.title}
+        aspectRatio={cropperConfig.aspectRatio}
+        targetWidth={cropperConfig.targetWidth}
+        targetHeight={cropperConfig.targetHeight}
+        isSignature={cropperConfig.isSignature}
+        onCrop={handleCropComplete}
+        onCancel={handleCropCancel}
+      />
     </div>
   );
 }

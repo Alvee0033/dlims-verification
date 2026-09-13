@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ImageCropperModal from '@/components/ImageCropperModal';
 
 interface ParsedOcrResult {
   licenseNumber: string;
@@ -117,6 +118,27 @@ export default function NewLicensePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
 
+  // Interactive Cropper Modal state
+  const [cropperConfig, setCropperConfig] = useState<{
+    isOpen: boolean;
+    imageSrc: string | null;
+    title: string;
+    aspectRatio: number;
+    targetWidth: number;
+    targetHeight: number;
+    isSignature: boolean;
+    type: 'photo' | 'signature';
+  }>({
+    isOpen: false,
+    imageSrc: null,
+    title: '',
+    aspectRatio: 404 / 480,
+    targetWidth: 404,
+    targetHeight: 480,
+    isSignature: false,
+    type: 'photo',
+  });
+
   // Live Card Preview & Auto-generation state
   const [cardPreviewUri, setCardPreviewUri] = useState<string | null>(null);
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
@@ -207,63 +229,94 @@ export default function NewLicensePage() {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setUploadingPhoto(true);
-      try {
-        const compressed = await compressImage(file, 600, 0.85);
-        const data = new FormData();
-        data.append('photo', compressed);
-
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: data,
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCropperConfig({
+          isOpen: true,
+          imageSrc: reader.result as string,
+          title: 'Adjust & Crop Driver Photo (404 x 480)',
+          aspectRatio: 404 / 480,
+          targetWidth: 404,
+          targetHeight: 480,
+          isSignature: false,
+          type: 'photo',
         });
-
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to upload photo');
-        }
-
-        const newPhotoUrl = json.url;
-        setFormData((prev) => ({ ...prev, photoUrl: newPhotoUrl }));
-        refreshCardPreview({ ...formData, photoUrl: newPhotoUrl });
-      } catch (err: any) {
-        alert(err.message || 'Error uploading photo');
-      } finally {
-        setUploadingPhoto(false);
-      }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
     }
   };
 
-  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setUploadingSignature(true);
-      try {
-        const data = new FormData();
-        data.append('signature', file);
-
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: data,
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCropperConfig({
+          isOpen: true,
+          imageSrc: reader.result as string,
+          title: 'Adjust & Crop Driver Signature',
+          aspectRatio: 340 / 150,
+          targetWidth: 680,
+          targetHeight: 300,
+          isSignature: true,
+          type: 'signature',
         });
-
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to upload signature');
-        }
-
-        const newSignatureUrl = json.url;
-        setFormData((prev) => ({ ...prev, signatureUrl: newSignatureUrl }));
-        refreshCardPreview({ ...formData, signatureUrl: newSignatureUrl });
-      } catch (err: any) {
-        alert(err.message || 'Error uploading signature');
-      } finally {
-        setUploadingSignature(false);
-      }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
     }
+  };
+
+  const handleCropComplete = async (blob: Blob, _previewUrl: string) => {
+    const isSig = cropperConfig.type === 'signature';
+    if (isSig) {
+      setUploadingSignature(true);
+    } else {
+      setUploadingPhoto(true);
+    }
+
+    setCropperConfig((prev) => ({ ...prev, isOpen: false, imageSrc: null }));
+
+    try {
+      const data = new FormData();
+      if (isSig) {
+        data.append('signature', blob, 'signature.png');
+      } else {
+        data.append('photo', blob, 'driver_photo.jpg');
+      }
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: data,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to upload image');
+      }
+
+      const newUrl = json.url;
+      if (isSig) {
+        setFormData((prev) => ({ ...prev, signatureUrl: newUrl }));
+        refreshCardPreview({ ...formData, signatureUrl: newUrl });
+      } else {
+        setFormData((prev) => ({ ...prev, photoUrl: newUrl }));
+        refreshCardPreview({ ...formData, photoUrl: newUrl });
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error uploading cropped image');
+    } finally {
+      setUploadingPhoto(false);
+      setUploadingSignature(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropperConfig((prev) => ({ ...prev, isOpen: false, imageSrc: null }));
   };
 
   // Instant compressed file processing for OCR
@@ -487,7 +540,6 @@ export default function NewLicensePage() {
                     type="file"
                     id="formQuickScanInput"
                     accept="image/*"
-                    capture="environment"
                     onChange={handleFileChange}
                     className="d-none"
                   />
@@ -1169,7 +1221,6 @@ export default function NewLicensePage() {
                   type="file"
                   id="idCardCameraInput"
                   accept="image/*"
-                  capture="environment"
                   onChange={handleFileChange}
                   className="d-none"
                 />
@@ -1178,8 +1229,8 @@ export default function NewLicensePage() {
                   className="btn btn-success flex-fill d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold shadow-sm"
                   style={{ backgroundColor: '#0f4c3a', borderColor: '#0f4c3a', minHeight: '44px' }}
                 >
-                  <i className="fas fa-camera"></i>
-                  <span>Capture / Upload ID</span>
+                  <i className="fas fa-file-arrow-up"></i>
+                  <span>Upload ID Card</span>
                 </label>
 
                 {selectedFile && !isScanning && (
@@ -1303,6 +1354,19 @@ export default function NewLicensePage() {
           </div>
         </div>
       )}
+
+      {/* Interactive Image Cropping Modal */}
+      <ImageCropperModal
+        isOpen={cropperConfig.isOpen}
+        imageSrc={cropperConfig.imageSrc}
+        title={cropperConfig.title}
+        aspectRatio={cropperConfig.aspectRatio}
+        targetWidth={cropperConfig.targetWidth}
+        targetHeight={cropperConfig.targetHeight}
+        isSignature={cropperConfig.isSignature}
+        onCrop={handleCropComplete}
+        onCancel={handleCropCancel}
+      />
     </div>
   );
 }

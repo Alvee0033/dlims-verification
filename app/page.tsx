@@ -406,8 +406,11 @@ export default function Home() {
               <div className="profile-image-container">
                 <img
                   className="profile-image"
-                  src={result.photoUrl}
+                  src={result.photoUrl || '/assets/driver-photo.jpg'}
                   alt="License Photo"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/assets/driver-photo.jpg';
+                  }}
                 />
               </div>
               <ul className="list-group list-group-flush info-section">

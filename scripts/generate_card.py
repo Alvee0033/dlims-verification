@@ -40,6 +40,30 @@ def _load_image_input(img_input, base_dir):
                 return Image.open(pp)
             except Exception:
                 pass
+
+    if input_str.startswith("http://") or input_str.startswith("https://"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(input_str, headers={'User-Agent': 'DLIMS-Card/1.0'})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                return Image.open(BytesIO(resp.read()))
+        except Exception:
+            pass
+
+    if "uploads/" in input_str:
+        filename = os.path.basename(clean_p)
+        for port in [3000, 3001]:
+            try:
+                import urllib.request
+                url = f"http://127.0.0.1:{port}/uploads/{filename}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'DLIMS-Card/1.0'})
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    data_bytes = resp.read()
+                    if data_bytes:
+                        return Image.open(BytesIO(data_bytes))
+            except Exception:
+                pass
+
     return None
 
 def paste_signature(template, signature_input, base_dir):
@@ -222,8 +246,8 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
                 new_data.append(DARK)
         bc_img.putdata(new_data)
         
-        bc_resized = bc_img.resize((833, 99), Image.Resampling.NEAREST)
-        template.paste(bc_resized, (94, 1322), bc_resized)
+        bc_resized = bc_img.resize((800, 96), Image.Resampling.NEAREST)
+        template.paste(bc_resized, (105, 1323), bc_resized)
     except Exception as e:
         sys.stderr.write(f"Barcode error: {e}\n")
 
@@ -231,9 +255,19 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     if clean_cnic and font_arimo_path:
         draw.text((1275, 1303), clean_cnic, font=f_fields, fill=DARK)
 
-    # 8. Back License No (x=587, y=1440)
+    # 8. Back License No (right-aligned ending at x=935, safe from x=964 divider)
     if license_number and font_arimo_path:
-        draw.text((587, 1440), license_number, font=f_fields, fill=DARK)
+        lic_font = f_fields
+        bbox = lic_font.getbbox(license_number)
+        text_w = bbox[2] - bbox[0]
+        current_size = 62
+        while text_w > 460 and current_size > 36:
+            current_size -= 2
+            lic_font = ImageFont.truetype(font_arimo_path, current_size)
+            bbox = lic_font.getbbox(license_number)
+            text_w = bbox[2] - bbox[0]
+        lic_x = max(935 - text_w, 470)
+        draw.text((lic_x, 1440), license_number, font=lic_font, fill=DARK)
 
     # 9. Back Blood Group (x=1371, y=1530)
     if blood_group and font_arimo_path:

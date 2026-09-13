@@ -10,3 +10,6 @@ pnpm-debug.log*
 *.pem
 __pycache__/
 *.pyc
+*.tsbuildinfo
+public/uploads/*
+!public/uploads/.gitkeep

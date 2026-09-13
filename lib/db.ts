@@ -91,6 +91,13 @@ async function ensureSchema(client: any) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
+
+    CREATE TABLE IF NOT EXISTS uploaded_files (
+      filename VARCHAR(255) PRIMARY KEY,
+      mime_type VARCHAR(64) NOT NULL,
+      data BYTEA NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Ensure admin user exists with valid hash for Admin@123
@@ -563,4 +570,21 @@ export async function getDashboardStats() {
     recentVerifications: recentVerifs,
     recentLicenses: recentLics,
   };
+}
+
+export async function saveUploadedFile(filename: string, mimeType: string, data: Buffer): Promise<void> {
+  await query(
+    `INSERT INTO uploaded_files (filename, mime_type, data)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (filename) DO UPDATE SET mime_type = $2, data = $3`,
+    [filename, mimeType, data]
+  );
+}
+
+export async function getUploadedFile(filename: string): Promise<{ mime_type: string; data: Buffer } | null> {
+  const rows = await query<{ mime_type: string; data: Buffer }>(
+    `SELECT mime_type, data FROM uploaded_files WHERE filename = $1 LIMIT 1`,
+    [filename]
+  );
+  return rows[0] || null;
 }

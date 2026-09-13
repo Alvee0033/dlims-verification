@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
+import { saveUploadedFile } from '@/lib/db';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -32,7 +33,16 @@ export async function POST(req: NextRequest) {
     const filename = `${prefix}${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
     const filePath = path.join(uploadsDir, filename);
 
+    // Save to disk
     await fs.writeFile(filePath, buffer);
+
+    // Save to PostgreSQL database for container persistence
+    const mimeType = file.type || (ext.toLowerCase() === '.png' ? 'image/png' : 'image/jpeg');
+    try {
+      await saveUploadedFile(filename, mimeType, buffer);
+    } catch (dbErr) {
+      console.error('Failed to persist upload in database:', dbErr);
+    }
 
     const fileUrl = `/uploads/${filename}`;
     return NextResponse.json({ success: true, url: fileUrl });

@@ -63,3 +63,10 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
+
+CREATE TABLE IF NOT EXISTS uploaded_files (
+    filename VARCHAR(255) PRIMARY KEY,
+    mime_type VARCHAR(64) NOT NULL,
+    data BYTEA NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

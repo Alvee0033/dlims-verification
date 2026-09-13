@@ -100,6 +100,30 @@ def _load_image_input(img_input):
                 return Image.open(pp)
             except Exception:
                 pass
+
+    if input_str.startswith("http://") or input_str.startswith("https://"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(input_str, headers={'User-Agent': 'DLIMS-Card/1.0'})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                return Image.open(BytesIO(resp.read()))
+        except Exception:
+            pass
+
+    if "uploads/" in input_str:
+        filename = os.path.basename(clean_p)
+        for port in [3000, 3001]:
+            try:
+                import urllib.request
+                url = f"http://127.0.0.1:{port}/uploads/{filename}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'DLIMS-Card/1.0'})
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    data_bytes = resp.read()
+                    if data_bytes:
+                        return Image.open(BytesIO(data_bytes))
+            except Exception:
+                pass
+
     return None
 
 def load_photo(photo_input):
@@ -268,8 +292,8 @@ def generate_card(data, output_format="png", preview=False):
             for item in datas
         ]
         bc_img.putdata(new_data)
-        bc_img = bc_img.resize((s(833), s(99)), Image.Resampling.NEAREST)
-        template.paste(bc_img, (s(94), s(1322)), bc_img)
+        bc_img = bc_img.resize((s(800), s(96)), Image.Resampling.NEAREST)
+        template.paste(bc_img, (s(105), s(1323)), bc_img)
     except Exception as e:
         sys.stderr.write(f"Barcode error: {e}\n")
 
@@ -277,8 +301,18 @@ def generate_card(data, output_format="png", preview=False):
     if fonts["fields"]:
         if clean_cnic:
             draw.text((s(1275), s(1303)), clean_cnic,     font=fonts["fields"], fill=DARK)
-        if license_number:
-            draw.text((s(587),  s(1440)), license_number, font=fonts["fields"], fill=DARK)
+        if license_number and FONT_ARIMO_PATH:
+            lic_font = fonts["fields"]
+            bbox = lic_font.getbbox(license_number) if lic_font else (0, 0, 0, 0)
+            text_w = bbox[2] - bbox[0]
+            current_size = 62
+            while text_w > s(460) and current_size > 36:
+                current_size -= 2
+                lic_font = ImageFont.truetype(FONT_ARIMO_PATH, max(1, int(current_size * scale)))
+                bbox = lic_font.getbbox(license_number)
+                text_w = bbox[2] - bbox[0]
+            lic_x = max(s(935) - text_w, s(470))
+            draw.text((lic_x, s(1440)), license_number, font=lic_font, fill=DARK)
         if blood_group:
             draw.text((s(1371), s(1530)), blood_group,    font=fonts["fields"], fill=DARK)
         if vehicles:
