@@ -153,21 +153,20 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     # 1b. Driver Signature (only if user provided/uploaded signature)
     paste_signature(template, signature_input, base_dir)
 
-    # 2. Urdu Name (x=1440, y=378, size=46)
+    # 2. Urdu Name (safe right boundary x=1500, expands to the left, y=378)
     if urdu_name and font_urdu_path:
         try:
-            f_urdu = ImageFont.truetype(font_urdu_path, 46)
-            try:
-                draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK, direction="rtl", language="urd", anchor="ra")
-            except Exception:
-                try:
-                    import arabic_reshaper
-                    from bidi.algorithm import get_display
-                    reshaped_text = arabic_reshaper.reshape(urdu_name)
-                    bidi_text = get_display(reshaped_text)
-                    draw.text((1440, 378), bidi_text, font=f_urdu, fill=DARK, anchor="ra")
-                except Exception:
-                    draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK)
+            current_size = 46
+            f_urdu = ImageFont.truetype(font_urdu_path, current_size)
+            bbox = draw.textbbox((0, 0), urdu_name, font=f_urdu)
+            text_w = bbox[2] - bbox[0]
+            while text_w > 670 and current_size > 28:
+                current_size -= 2
+                f_urdu = ImageFont.truetype(font_urdu_path, current_size)
+                bbox = draw.textbbox((0, 0), urdu_name, font=f_urdu)
+                text_w = bbox[2] - bbox[0]
+            urdu_x = 1500 - text_w
+            draw.text((urdu_x, 378), urdu_name, font=f_urdu, fill=DARK)
         except Exception as e:
             sys.stderr.write(f"Urdu text rendering error: {e}\n")
 
