@@ -73,14 +73,13 @@ def format_date(d_str):
     return d_str
 
 def load_photo(photo_input):
-    if not photo_input:
+    if not photo_input or not str(photo_input).strip():
         return None
     clean_p = str(photo_input).lstrip("/")
     candidates = [
         photo_input,
         os.path.join(BASE_DIR, clean_p),
         os.path.join(BASE_DIR, "public", clean_p),
-        os.path.join(BASE_DIR, "assets", "demo_driver_photo.png"),
     ]
     for pp in candidates:
         if os.path.exists(pp) and os.path.isfile(pp):
@@ -88,12 +87,6 @@ def load_photo(photo_input):
                 return Image.open(pp).convert("RGBA")
             except Exception:
                 pass
-    fallback = os.path.join(BASE_DIR, "assets", "demo_driver_photo.png")
-    if os.path.exists(fallback):
-        try:
-            return Image.open(fallback).convert("RGBA")
-        except Exception:
-            pass
     return None
 
 def paste_photo(template, photo_input, scale=1.0):
@@ -125,20 +118,20 @@ def generate_card(data, output_format="png", preview=False):
         """Scale a coordinate."""
         return int(v * scale)
 
-    # Extract fields
-    english_name   = str(data.get("name") or "DRIVING LICENSE").strip()
+    # Extract fields (NO dummy defaults)
+    english_name   = str(data.get("name") or "").strip()
     urdu_name      = str(data.get("urduName") or data.get("urdu_name") or "").strip()
     address        = str(data.get("address") or "").strip()
-    license_number = str(data.get("licenseNumber") or data.get("license_number") or "0000000000").strip()
-    dob            = format_date(data.get("dob") or "01-01-1995")
+    license_number = str(data.get("licenseNumber") or data.get("license_number") or "").strip()
+    dob            = format_date(data.get("dob") or "")
     cnic_raw       = str(data.get("cnic") or "").strip()
     clean_cnic     = cnic_raw.replace("-", "").strip()
-    issue_date     = format_date(data.get("issueDate") or data.get("issue_date") or "01-01-2024")
-    expiry_date    = format_date(data.get("expiryDate") or data.get("expiry_date") or "01-01-2029")
-    blood_group    = str(data.get("bloodGroup") or data.get("blood_group") or "B+").strip()
-    vehicles       = str(data.get("allowedVehicles") or data.get("allowed_vehicles") or "M/Cycle, M/Car").strip()
+    issue_date     = format_date(data.get("issueDate") or data.get("issue_date") or "")
+    expiry_date    = format_date(data.get("expiryDate") or data.get("expiry_date") or "")
+    blood_group    = str(data.get("bloodGroup") or data.get("blood_group") or "").strip()
+    vehicles       = str(data.get("allowedVehicles") or data.get("allowed_vehicles") or "").strip()
     domain         = str(data.get("domain") or "https://d6z0wwoe1kg3g9yfttqbu7nb.163.227.239.97.sslip.io").rstrip("/")
-    qr_url         = str(data.get("qrUrl") or f"{domain}/?verify={license_number}").strip()
+    qr_url         = str(data.get("qrUrl") or (f"{domain}/?verify={license_number}" if license_number else domain)).strip()
     website        = str(data.get("website") or "www.dlimsvitpk.com").strip()
     barcode_value  = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvitpk.com").strip()
     photo_input    = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
@@ -160,28 +153,33 @@ def generate_card(data, output_format="png", preview=False):
                 draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK)
 
     # 3. English name
-    if fonts["name"]:
+    if fonts["name"] and english_name:
         draw.text((s(832), s(494)), english_name, font=fonts["name"], fill=DARK)
 
     # 4. Address
-    if fonts["addr"]:
+    if fonts["addr"] and address:
         addr_lines = address.split("\n")
         if len(addr_lines) == 1 and len(address) > 40:
             words = address.split(" ")
             mid = len(words) // 2
             addr_lines = [" ".join(words[:mid]), " ".join(words[mid:])]
-        if addr_lines:
+        if addr_lines and addr_lines[0]:
             draw.text((s(834), s(592)), addr_lines[0], font=fonts["addr"], fill=DARK)
-        if len(addr_lines) > 1:
+        if len(addr_lines) > 1 and addr_lines[1]:
             draw.text((s(834), s(646)), addr_lines[1], font=fonts["addr"], fill=DARK)
 
     # 5. Front table fields
     if fonts["fields"]:
-        draw.text((s(1015), s(747)),  license_number, font=fonts["fields"], fill=RED)
-        draw.text((s(1012), s(831)),  dob,            font=fonts["fields"], fill=DARK)
-        draw.text((s(1012), s(915)),  clean_cnic,     font=fonts["fields"], fill=DARK)
-        draw.text((s(1015), s(995)),  issue_date,     font=fonts["fields"], fill=DARK)
-        draw.text((s(1015), s(1067)), expiry_date,    font=fonts["fields"], fill=RED)
+        if license_number:
+            draw.text((s(1015), s(747)),  license_number, font=fonts["fields"], fill=RED)
+        if dob:
+            draw.text((s(1012), s(831)),  dob,            font=fonts["fields"], fill=DARK)
+        if clean_cnic:
+            draw.text((s(1012), s(915)),  clean_cnic,     font=fonts["fields"], fill=DARK)
+        if issue_date:
+            draw.text((s(1015), s(995)),  issue_date,     font=fonts["fields"], fill=DARK)
+        if expiry_date:
+            draw.text((s(1015), s(1067)), expiry_date,    font=fonts["fields"], fill=RED)
 
     # 6. Barcode
     try:
@@ -204,10 +202,14 @@ def generate_card(data, output_format="png", preview=False):
 
     # 7-10. Back fields
     if fonts["fields"]:
-        draw.text((s(1275), s(1303)), clean_cnic,     font=fonts["fields"], fill=DARK)
-        draw.text((s(587),  s(1440)), license_number, font=fonts["fields"], fill=DARK)
-        draw.text((s(1371), s(1530)), blood_group,    font=fonts["fields"], fill=DARK)
-        draw.text((s(1000), s(1640)), vehicles,       font=fonts["fields"], fill=DARK)
+        if clean_cnic:
+            draw.text((s(1275), s(1303)), clean_cnic,     font=fonts["fields"], fill=DARK)
+        if license_number:
+            draw.text((s(587),  s(1440)), license_number, font=fonts["fields"], fill=DARK)
+        if blood_group:
+            draw.text((s(1371), s(1530)), blood_group,    font=fonts["fields"], fill=DARK)
+        if vehicles:
+            draw.text((s(1000), s(1640)), vehicles,       font=fonts["fields"], fill=DARK)
 
     # 11. QR code
     try:

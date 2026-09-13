@@ -107,7 +107,7 @@ export default function NewLicensePage() {
     status: 'VALID',
     bloodGroup: 'B+',
     district: '',
-    photoUrl: '/assets/driver-photo.jpg',
+    photoUrl: '',
   });
 
   const [saving, setSaving] = useState(false);
@@ -143,28 +143,15 @@ export default function NewLicensePage() {
     }
   };
 
-  // Initial preview on mount
+  // Initial preview on mount (renders clean blank card template with no fake person data)
   useEffect(() => {
-    refreshCardPreview({
-      ...formData,
-      name: formData.name || 'GHULAM MURTAZA',
-      urduName: formData.urduName || 'غلام مرتضیٰ',
-      licenseNumber: formData.licenseNumber || '1280012281',
-      cnic: formData.cnic || '32402-8423273-1',
-      dob: formData.dob || '1998-04-22',
-      issueDate: formData.issueDate || '2018-07-14',
-      expiryDate: formData.expiryDate || '2028-07-14',
-      address: formData.address || 'dakh khana khas teh distt Dera ghazi Khan',
-      bloodGroup: formData.bloodGroup || 'A+',
-    });
+    refreshCardPreview(formData);
   }, []);
 
   // Real-time debounced preview (250ms debounce, seamless background sync)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (formData.name || formData.licenseNumber || formData.cnic) {
-        refreshCardPreview(formData);
-      }
+      refreshCardPreview(formData);
     }, 250);
     return () => clearTimeout(timer);
   }, [
@@ -730,14 +717,18 @@ export default function NewLicensePage() {
                     </label>
                     <div className="d-flex align-items-center gap-3 p-2 border rounded bg-light">
                       <div
-                        className="position-relative rounded overflow-hidden border border-2 border-success flex-shrink-0 bg-white shadow-sm"
+                        className="position-relative rounded overflow-hidden border border-2 border-secondary border-opacity-50 flex-shrink-0 bg-white shadow-sm d-flex align-items-center justify-content-center"
                         style={{ width: 54, height: 60 }}
                       >
-                        <img
-                          src={formData.photoUrl || '/assets/driver-photo.jpg'}
-                          alt="Driver"
-                          className="w-100 h-100 object-fit-cover"
-                        />
+                        {formData.photoUrl ? (
+                          <img
+                            src={formData.photoUrl}
+                            alt="Driver"
+                            className="w-100 h-100 object-fit-cover"
+                          />
+                        ) : (
+                          <i className="fas fa-user text-muted opacity-50" style={{ fontSize: '1.4rem' }}></i>
+                        )}
                       </div>
 
                       <div className="flex-grow-1">
@@ -749,25 +740,40 @@ export default function NewLicensePage() {
                           onChange={handlePhotoUpload}
                           className="d-none"
                         />
-                        <label
-                          htmlFor="driverPhotoFileInput"
-                          className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2 py-1 px-3 fw-semibold"
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {uploadingPhoto ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm" />
-                              <span>Uploading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <i className="fas fa-camera"></i>
-                              <span>Upload Photo</span>
-                            </>
+                        <div className="d-flex align-items-center gap-2">
+                          <label
+                            htmlFor="driverPhotoFileInput"
+                            className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2 py-1 px-3 fw-semibold"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {uploadingPhoto ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm" />
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <i className="fas fa-camera"></i>
+                                <span>{formData.photoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                              </>
+                            )}
+                          </label>
+                          {formData.photoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, photoUrl: '' }));
+                                refreshCardPreview({ ...formData, photoUrl: '' });
+                              }}
+                              className="btn btn-sm btn-outline-danger py-1 px-2"
+                              title="Remove photo"
+                            >
+                              <i className="fas fa-trash-alt me-1"></i> Remove
+                            </button>
                           )}
-                        </label>
+                        </div>
                         <div className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>
-                          Auto-framed into card template (436x454)
+                          Auto-framed into card template (404x480)
                         </div>
                       </div>
                     </div>

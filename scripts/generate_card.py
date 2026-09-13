@@ -50,33 +50,32 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     DARK = (27, 33, 37, 255)
     RED = (161, 44, 47, 255)
 
-    # Extract & sanitize fields
-    english_name = str(data.get("name") or "DRIVING LICENSE").strip()
+    # Extract & sanitize fields (NO dummy defaults)
+    english_name = str(data.get("name") or "").strip()
     urdu_name = str(data.get("urduName") or data.get("urdu_name") or "").strip()
     address = str(data.get("address") or "").strip()
-    license_number = str(data.get("licenseNumber") or data.get("license_number") or "0000000000").strip()
-    dob = format_date(data.get("dob") or "01-01-1995")
+    license_number = str(data.get("licenseNumber") or data.get("license_number") or "").strip()
+    dob = format_date(data.get("dob") or "")
     cnic_raw = str(data.get("cnic") or "").strip()
     clean_cnic = cnic_raw.replace("-", "").strip()
-    issue_date = format_date(data.get("issueDate") or data.get("issue_date") or "01-01-2024")
-    expiry_date = format_date(data.get("expiryDate") or data.get("expiry_date") or "01-01-2029")
-    blood_group = str(data.get("bloodGroup") or data.get("blood_group") or "B+").strip()
-    vehicles = str(data.get("allowedVehicles") or data.get("allowed_vehicles") or "M/Cycle, M/Car").strip()
+    issue_date = format_date(data.get("issueDate") or data.get("issue_date") or "")
+    expiry_date = format_date(data.get("expiryDate") or data.get("expiry_date") or "")
+    blood_group = str(data.get("bloodGroup") or data.get("blood_group") or "").strip()
+    vehicles = str(data.get("allowedVehicles") or data.get("allowed_vehicles") or "").strip()
     domain = str(data.get("domain") or "https://d6z0wwoe1kg3g9yfttqbu7nb.163.227.239.97.sslip.io").rstrip("/")
-    qr_url = str(data.get("qrUrl") or f"{domain}/?verify={license_number}").strip()
+    qr_url = str(data.get("qrUrl") or (f"{domain}/?verify={license_number}" if license_number else domain)).strip()
     website = str(data.get("website") or "www.dlimsvitpk.com").strip()
     barcode_value = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvitpk.com").strip()
     photo_input = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
 
-    # 1. Driver Photo (exact target: x=89, y=427, w=404, h=480)
+    # 1. Driver Photo (only if user provided/uploaded photo, NO demo fallback)
     photo_img = None
-    if photo_input:
-        clean_p = photo_input.lstrip("/")
+    if photo_input and str(photo_input).strip():
+        clean_p = str(photo_input).lstrip("/")
         possible_paths = [
             photo_input,
             os.path.join(base_dir, clean_p),
             os.path.join(base_dir, "public", clean_p),
-            os.path.join(base_dir, "assets", "demo_driver_photo.png"),
         ]
         for pp in possible_paths:
             if os.path.exists(pp) and os.path.isfile(pp):
@@ -85,11 +84,6 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
                     break
                 except Exception:
                     pass
-
-    if not photo_img:
-        fallback = os.path.join(base_dir, "assets", "demo_driver_photo.png")
-        if os.path.exists(fallback):
-            photo_img = Image.open(fallback).convert("RGBA")
 
     if photo_img:
         from PIL import ImageOps
@@ -102,7 +96,7 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
             f_urdu = ImageFont.truetype(font_urdu_path, 46)
             try:
                 draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK, direction="rtl", language="urd", anchor="ra")
-            except Exception as e_raqm:
+            except Exception:
                 try:
                     import arabic_reshaper
                     from bidi.algorithm import get_display
@@ -115,36 +109,36 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
             sys.stderr.write(f"Urdu text rendering error: {e}\n")
 
     # 3. English Name (x=832, y=494)
-    if font_arimo_path:
+    if english_name and font_arimo_path:
         f_name = ImageFont.truetype(font_arimo_path, 68)
         draw.text((832, 494), english_name, font=f_name, fill=DARK)
 
     # 4. Address (x=834, y=592 and y=646)
-    if font_arimo_path:
+    if address and font_arimo_path:
         f_addr = ImageFont.truetype(font_arimo_path, 42)
         addr_lines = address.split("\n")
         if len(addr_lines) == 1 and len(address) > 40:
             words = address.split(" ")
             mid = len(words) // 2
             addr_lines = [" ".join(words[:mid]), " ".join(words[mid:])]
-        if len(addr_lines) > 0:
+        if len(addr_lines) > 0 and addr_lines[0]:
             draw.text((834, 592), addr_lines[0], font=f_addr, fill=DARK)
-        if len(addr_lines) > 1:
+        if len(addr_lines) > 1 and addr_lines[1]:
             draw.text((834, 646), addr_lines[1], font=f_addr, fill=DARK)
 
     # 5. Front Table Fields (x=1012-1015, font size 62)
     if font_arimo_path:
         f_fields = ImageFont.truetype(font_arimo_path, 62)
-        # ITP License No (Red)
-        draw.text((1015, 747), license_number, font=f_fields, fill=RED)
-        # Date of Birth
-        draw.text((1012, 831), dob, font=f_fields, fill=DARK)
-        # CNIC No (clean digits)
-        draw.text((1012, 915), clean_cnic, font=f_fields, fill=DARK)
-        # Issue Date
-        draw.text((1015, 995), issue_date, font=f_fields, fill=DARK)
-        # Expires Date (Red)
-        draw.text((1015, 1067), expiry_date, font=f_fields, fill=RED)
+        if license_number:
+            draw.text((1015, 747), license_number, font=f_fields, fill=RED)
+        if dob:
+            draw.text((1012, 831), dob, font=f_fields, fill=DARK)
+        if clean_cnic:
+            draw.text((1012, 915), clean_cnic, font=f_fields, fill=DARK)
+        if issue_date:
+            draw.text((1015, 995), issue_date, font=f_fields, fill=DARK)
+        if expiry_date:
+            draw.text((1015, 1067), expiry_date, font=f_fields, fill=RED)
 
     # --- BACK CARD ---
     # 6. Barcode (x=94, y=1322, w=833, h=99)
@@ -172,15 +166,15 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
         sys.stderr.write(f"Barcode error: {e}\n")
 
     # 7. Back CNIC (x=1275, y=1303)
-    if font_arimo_path:
+    if clean_cnic and font_arimo_path:
         draw.text((1275, 1303), clean_cnic, font=f_fields, fill=DARK)
 
     # 8. Back License No (x=587, y=1440)
-    if font_arimo_path:
+    if license_number and font_arimo_path:
         draw.text((587, 1440), license_number, font=f_fields, fill=DARK)
 
     # 9. Back Blood Group (x=1371, y=1530)
-    if font_arimo_path:
+    if blood_group and font_arimo_path:
         draw.text((1371, 1530), blood_group, font=f_fields, fill=DARK)
 
     # 10. Back Vehicles (x=1000, y=1640)
