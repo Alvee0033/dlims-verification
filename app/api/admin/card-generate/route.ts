@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
         allowedVehicles: body.allowedVehicles || body.allowed_vehicles || 'M/Cycle, M/Car',
         photoUrl: body.photoUrl || body.photo_url || '/assets/driver-photo.jpg',
         domain,
+        website: body.website || 'www.dlimsvitpk.com',
+        barcodeText: body.barcodeText || body.barcode_text || 'dlimsvitpk.com',
       },
       format,
       isPreview

@@ -64,7 +64,8 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     vehicles = str(data.get("allowedVehicles") or data.get("allowed_vehicles") or "M/Cycle, M/Car").strip()
     domain = str(data.get("domain") or "https://d6z0wwoe1kg3g9yfttqbu7nb.163.227.239.97.sslip.io").rstrip("/")
     qr_url = str(data.get("qrUrl") or f"{domain}/?verify={license_number}").strip()
-    website = str(data.get("website") or "dlims.punjab.gov.pk").strip()
+    website = str(data.get("website") or "www.dlimsvitpk.com").strip()
+    barcode_value = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvitpk.com").strip()
     photo_input = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
 
     # 1. Driver Photo (exact target: x=89, y=427, w=404, h=480)
@@ -150,7 +151,7 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     try:
         CODE128 = barcode.get_barcode_class("code128")
         rv = BytesIO()
-        bc = CODE128(license_number, writer=ImageWriter())
+        bc = CODE128(barcode_value, writer=ImageWriter())
         bc.write(rv, options={"write_text": False, "quiet_zone": 0.1, "module_height": 15.0})
         rv.seek(0)
         bc_img = Image.open(rv).convert("RGBA")

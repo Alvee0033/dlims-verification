@@ -25,6 +25,8 @@ export interface CardData {
   photo_url?: string | null;
   website?: string | null;
   domain?: string | null;
+  barcodeText?: string | null;
+  barcode_text?: string | null;
   preview?: boolean;
 }
 
