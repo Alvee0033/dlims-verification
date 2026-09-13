@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -33,8 +33,8 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<'pdf' | 'png' | null>(null);
 
-  // Auto-generate card preview
-  const refreshCardPreview = useCallback(async (dataToRender = formData) => {
+  // Manual card preview — only called when user clicks "Preview Card"
+  const refreshCardPreview = async (dataToRender = formData) => {
     if (!dataToRender.name && !dataToRender.license_number) return;
     setGeneratingPreview(true);
     try {
@@ -66,7 +66,7 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
     } finally {
       setGeneratingPreview(false);
     }
-  }, [formData]);
+  };
 
   useEffect(() => {
     fetch(`/api/admin/licenses/${params.id}`)
@@ -93,37 +93,12 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
             photo_url: data.license.photo_url || '/assets/driver-photo.jpg',
           };
           setFormData(loaded);
-          refreshCardPreview(loaded);
+          // No auto-preview on load — user clicks "Preview Card" manually
         }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [params.id]);
-
-  // Debounced auto-preview when form fields change
-  useEffect(() => {
-    if (loading) return;
-    const timer = setTimeout(() => {
-      refreshCardPreview(formData);
-    }, 700);
-
-    return () => clearTimeout(timer);
-  }, [
-    formData.name,
-    formData.urdu_name,
-    formData.father_name,
-    formData.dob,
-    formData.cnic,
-    formData.license_number,
-    formData.issue_date,
-    formData.expiry_date,
-    formData.address,
-    formData.blood_group,
-    formData.allowed_vehicles,
-    formData.photo_url,
-    loading,
-    refreshCardPreview,
-  ]);
 
   // Download PDF or PNG
   const handleDownloadCard = async (format: 'pdf' | 'png') => {
@@ -610,11 +585,32 @@ export default function EditLicensePage({ params }: { params: { id: string } }) 
                   <i className="fas fa-id-card fa-3x mb-2 text-secondary opacity-50"></i>
                   <div className="small fw-semibold">License Card Preview</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                    Loading preview...
+                    Click &quot;Preview Card&quot; below to generate.
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Preview Card Button */}
+            <button
+              type="button"
+              onClick={() => refreshCardPreview(formData)}
+              disabled={generatingPreview}
+              className="btn btn-success fw-semibold w-100 d-flex align-items-center justify-content-center gap-2 py-2 shadow-sm mb-2"
+              style={{ minHeight: '44px' }}
+            >
+              {generatingPreview ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" />
+                  <span>Rendering Card &amp; Barcode...</span>
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-eye"></i>
+                  <span>Preview Card</span>
+                </>
+              )}
+            </button>
 
             {/* Instant Download Action Buttons */}
             <div className="d-flex flex-column gap-2 mb-3">

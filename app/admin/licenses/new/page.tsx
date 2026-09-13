@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -120,8 +120,8 @@ export default function NewLicensePage() {
   const [generatingPreview, setGeneratingPreview] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<'pdf' | 'png' | null>(null);
 
-  // Auto-generate card preview from form data
-  const refreshCardPreview = useCallback(async (dataToRender = formData) => {
+  // Manual card preview — only called when user clicks "Preview Card"
+  const refreshCardPreview = async (dataToRender = formData) => {
     setGeneratingPreview(true);
     try {
       const res = await fetch('/api/admin/card-generate', {
@@ -141,48 +141,7 @@ export default function NewLicensePage() {
     } finally {
       setGeneratingPreview(false);
     }
-  }, [formData]);
-
-  // Initial preview on mount
-  useEffect(() => {
-    refreshCardPreview({
-      ...formData,
-      name: formData.name || 'GHULAM MURTAZA',
-      urduName: formData.urduName || 'غلام مرتضیٰ',
-      licenseNumber: formData.licenseNumber || '1280012281',
-      cnic: formData.cnic || '32402-8423273-1',
-      dob: formData.dob || '1998-04-22',
-      issueDate: formData.issueDate || '2018-07-14',
-      expiryDate: formData.expiryDate || '2028-07-14',
-      address: formData.address || 'dakh khana khas teh & distt Dera ghazi Khan pakistan',
-      bloodGroup: formData.bloodGroup || 'A+',
-    });
-  }, []);
-
-  // Debounce preview update when inputs change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (formData.name || formData.licenseNumber || formData.cnic) {
-        refreshCardPreview(formData);
-      }
-    }, 700);
-
-    return () => clearTimeout(timer);
-  }, [
-    formData.name,
-    formData.urduName,
-    formData.fatherName,
-    formData.dob,
-    formData.cnic,
-    formData.licenseNumber,
-    formData.issueDate,
-    formData.expiryDate,
-    formData.address,
-    formData.bloodGroup,
-    formData.allowedVehicles,
-    formData.photoUrl,
-    refreshCardPreview,
-  ]);
+  };
 
   // Download PDF or PNG
   const handleDownloadCard = async (format: 'pdf' | 'png') => {
@@ -899,11 +858,32 @@ export default function NewLicensePage() {
                     <i className="fas fa-id-card fa-3x mb-2 text-secondary opacity-50"></i>
                     <div className="small fw-semibold">License Card Preview</div>
                     <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                      Enter driver details to preview the card with auto-generated barcode and QR code.
+                      Click &quot;Preview Card&quot; below to generate.
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Preview Card Button */}
+              <button
+                type="button"
+                onClick={() => refreshCardPreview(formData)}
+                disabled={generatingPreview}
+                className="btn btn-success fw-semibold w-100 d-flex align-items-center justify-content-center gap-2 py-2 shadow-sm mb-2"
+                style={{ minHeight: '44px' }}
+              >
+                {generatingPreview ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm" />
+                    <span>Rendering Card &amp; Barcode...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-eye"></i>
+                    <span>Preview Card</span>
+                  </>
+                )}
+              </button>
 
               {/* Instant Download Action Buttons */}
               <div className="d-flex flex-column gap-2 mb-3">
