@@ -6,7 +6,6 @@ import argparse
 import base64
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-import numpy as np
 import barcode
 from barcode.writer import ImageWriter
 import qrcode
@@ -51,20 +50,19 @@ def paste_signature(template, signature_input, base_dir):
 
     has_alpha = False
     if sig_raw.mode == "RGBA":
-        alpha = np.array(sig_raw)[:, :, 3]
-        if np.any(alpha < 245):
-            has_alpha = True
+        try:
+            extrema = sig_raw.getchannel("A").getextrema()
+            if extrema[0] < 245:
+                has_alpha = True
+        except Exception:
+            pass
 
     if not has_alpha:
-        sig_rgb = sig_raw.convert("RGB")
-        arr = np.array(sig_rgb)
-        gray = np.mean(arr, axis=2)
-        h, w = gray.shape
-        rgba = np.zeros((h, w, 4), dtype=np.uint8)
-        alpha_arr = np.clip((215 - gray) * (255.0 / (215 - 125)), 0, 255).astype(np.uint8)
-        rgba[:, :, :3] = 15
-        rgba[:, :, 3] = alpha_arr
-        sig = Image.fromarray(rgba, "RGBA")
+        gray = sig_raw.convert("L")
+        lut = [int(max(0, min(255, (215 - i) * (255.0 / (215 - 125))))) for i in range(256)]
+        alpha_channel = gray.point(lut, mode="L")
+        black = Image.new("L", sig_raw.size, 15)
+        sig = Image.merge("RGBA", (black, black, black, alpha_channel))
     else:
         sig = sig_raw.convert("RGBA")
 

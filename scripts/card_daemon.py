@@ -12,8 +12,7 @@ import base64
 from io import BytesIO
 
 # ── Imports (loaded once) ────────────────────────────────────────────────────
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import barcode
 from barcode.writer import ImageWriter
 import qrcode
@@ -131,22 +130,21 @@ def paste_signature(template, signature_input, scale=1.0):
     # Check if image already has transparent alpha channel
     has_alpha = False
     if sig_raw.mode == "RGBA":
-        alpha = np.array(sig_raw)[:, :, 3]
-        if np.any(alpha < 245):
-            has_alpha = True
+        try:
+            extrema = sig_raw.getchannel("A").getextrema()
+            if extrema[0] < 245:
+                has_alpha = True
+        except Exception:
+            pass
 
     if not has_alpha:
         # Convert light paper background to transparent
-        sig_rgb = sig_raw.convert("RGB")
-        arr = np.array(sig_rgb)
-        gray = np.mean(arr, axis=2)
-        h, w = gray.shape
-        rgba = np.zeros((h, w, 4), dtype=np.uint8)
-        # Soft ramp: brightness > 215 -> transparent, brightness < 125 -> solid ink
-        alpha_arr = np.clip((215 - gray) * (255.0 / (215 - 125)), 0, 255).astype(np.uint8)
-        rgba[:, :, :3] = 15 # dark ink
-        rgba[:, :, 3] = alpha_arr
-        sig = Image.fromarray(rgba, "RGBA")
+        gray = sig_raw.convert("L")
+        # Fast C-level lookup table: brightness > 215 -> 0 (transparent), < 125 -> 255 (opaque)
+        lut = [int(max(0, min(255, (215 - i) * (255.0 / (215 - 125))))) for i in range(256)]
+        alpha_channel = gray.point(lut, mode="L")
+        black = Image.new("L", sig_raw.size, 15)
+        sig = Image.merge("RGBA", (black, black, black, alpha_channel))
     else:
         sig = sig_raw.convert("RGBA")
 
