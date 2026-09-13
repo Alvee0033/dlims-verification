@@ -247,7 +247,7 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
         bc_img.putdata(new_data)
         
         bc_resized = bc_img.resize((800, 96), Image.Resampling.NEAREST)
-        template.paste(bc_resized, (105, 1323), bc_resized)
+        template.paste(bc_resized, (85, 1323), bc_resized)
     except Exception as e:
         sys.stderr.write(f"Barcode error: {e}\n")
 
@@ -255,19 +255,19 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     if clean_cnic and font_arimo_path:
         draw.text((1275, 1303), clean_cnic, font=f_fields, fill=DARK)
 
-    # 8. Back License No (right-aligned ending at x=935, safe from x=964 divider)
+    # 8. Back License No (right-aligned ending at x=890, safe from x=964 divider)
     if license_number and font_arimo_path:
         lic_font = f_fields
         bbox = lic_font.getbbox(license_number)
         text_w = bbox[2] - bbox[0]
         current_size = 62
-        while text_w > 460 and current_size > 36:
+        while text_w > 420 and current_size > 36:
             current_size -= 2
             lic_font = ImageFont.truetype(font_arimo_path, current_size)
             bbox = lic_font.getbbox(license_number)
             text_w = bbox[2] - bbox[0]
-        lic_x = max(935 - text_w, 470)
-        draw.text((lic_x, 1440), license_number, font=lic_font, fill=DARK)
+        lic_x = max(890 - text_w, 470)
+        draw.text((lic_x, 1454), license_number, font=lic_font, fill=DARK)
 
     # 9. Back Blood Group (x=1371, y=1530)
     if blood_group and font_arimo_path:

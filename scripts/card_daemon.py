@@ -293,7 +293,7 @@ def generate_card(data, output_format="png", preview=False):
         ]
         bc_img.putdata(new_data)
         bc_img = bc_img.resize((s(800), s(96)), Image.Resampling.NEAREST)
-        template.paste(bc_img, (s(105), s(1323)), bc_img)
+        template.paste(bc_img, (s(85), s(1323)), bc_img)
     except Exception as e:
         sys.stderr.write(f"Barcode error: {e}\n")
 
@@ -306,13 +306,13 @@ def generate_card(data, output_format="png", preview=False):
             bbox = lic_font.getbbox(license_number) if lic_font else (0, 0, 0, 0)
             text_w = bbox[2] - bbox[0]
             current_size = 62
-            while text_w > s(460) and current_size > 36:
+            while text_w > s(420) and current_size > 36:
                 current_size -= 2
                 lic_font = ImageFont.truetype(FONT_ARIMO_PATH, max(1, int(current_size * scale)))
                 bbox = lic_font.getbbox(license_number)
                 text_w = bbox[2] - bbox[0]
-            lic_x = max(s(935) - text_w, s(470))
-            draw.text((lic_x, s(1440)), license_number, font=lic_font, fill=DARK)
+            lic_x = max(s(890) - text_w, s(470))
+            draw.text((lic_x, s(1454)), license_number, font=lic_font, fill=DARK)
         if blood_group:
             draw.text((s(1371), s(1530)), blood_group,    font=fonts["fields"], fill=DARK)
         if vehicles:
