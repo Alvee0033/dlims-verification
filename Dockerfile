@@ -1,6 +1,17 @@
 FROM node:20-alpine AS base
 
-RUN apk add --no-cache tesseract-ocr tesseract-ocr-data-eng libc6-compat
+RUN apk add --no-cache \
+    tesseract-ocr \
+    tesseract-ocr-data-eng \
+    libc6-compat \
+    python3 \
+    py3-pillow \
+    py3-pip \
+    py3-qrcode \
+    font-noto \
+    fribidi \
+    harfbuzz \
+    && pip install --no-cache-dir --break-system-packages python-barcode
 
 WORKDIR /app
 

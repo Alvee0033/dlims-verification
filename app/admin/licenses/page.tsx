@@ -361,81 +361,47 @@ export default function LicenseDirectoryPage() {
                 ></button>
               </div>
 
-              <div className="modal-body p-3 bg-light">
-                <div
-                  className="card border-0 rounded-4 shadow-sm p-3 text-white mb-3"
-                  style={{
-                    background: 'linear-gradient(135deg, #044330 0%, #065f46 50%, #022c22 100%)',
-                  }}
-                >
-                  <div className="d-flex justify-content-between align-items-start border-bottom pb-2 mb-2 border-light border-opacity-25">
-                    <div>
-                      <div className="text-warning fw-bold text-uppercase" style={{ fontSize: '0.68rem', letterSpacing: '0.06em' }}>
-                        Government of Pakistan
-                      </div>
-                      <h5 className="fw-bold mb-0">DRIVING LICENCE</h5>
-                    </div>
-                    <span className="badge bg-success px-2 py-1 small">
-                      {selectedLicense.status}
-                    </span>
-                  </div>
-
-                  <div className="row g-2 align-items-center">
-                    <div className="col-4 col-sm-3 text-center">
-                      <img
-                        src={selectedLicense.photo_url || '/assets/driver-photo.jpg'}
-                        alt={selectedLicense.name}
-                        className="rounded-3 border border-2 border-white shadow-sm object-fit-cover w-100"
-                        style={{ maxHeight: '140px' }}
-                      />
-                    </div>
-                    <div className="col-8 col-sm-9">
-                      <div className="row g-1 small">
-                        <div className="col-12">
-                          <span className="text-white-50" style={{ fontSize: '0.7rem' }}>Name:</span>
-                          <div className="fw-bold fs-6">{selectedLicense.name}</div>
-                        </div>
-                        {selectedLicense.father_name && (
-                          <div className="col-12">
-                            <span className="text-white-50" style={{ fontSize: '0.7rem' }}>Father Name:</span>
-                            <div>{selectedLicense.father_name}</div>
-                          </div>
-                        )}
-                        <div className="col-6">
-                          <span className="text-white-50" style={{ fontSize: '0.7rem' }}>License #:</span>
-                          <div className="fw-bold font-monospace">{selectedLicense.license_number}</div>
-                        </div>
-                        <div className="col-6">
-                          <span className="text-white-50" style={{ fontSize: '0.7rem' }}>CNIC:</span>
-                          <div className="font-monospace">{selectedLicense.cnic}</div>
-                        </div>
-                        <div className="col-12">
-                          <span className="text-white-50" style={{ fontSize: '0.7rem' }}>Class:</span>
-                          <div className="fw-bold text-warning">{selectedLicense.allowed_vehicles}</div>
-                        </div>
-                        <div className="col-6">
-                          <span className="text-white-50" style={{ fontSize: '0.7rem' }}>Issue:</span>
-                          <div className="font-monospace">{selectedLicense.issue_date}</div>
-                        </div>
-                        <div className="col-6">
-                          <span className="text-white-50" style={{ fontSize: '0.7rem' }}>Expiry:</span>
-                          <div className="font-monospace">{selectedLicense.expiry_date}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <div className="modal-body p-3 bg-light text-center">
+                {/* Auto-Generated Card Display */}
+                <div className="mb-3 text-center position-relative bg-dark bg-opacity-10 rounded-3 p-2 border">
+                  <img
+                    src={`/api/admin/licenses/${selectedLicense.id}/card`}
+                    alt={`License Card - ${selectedLicense.name}`}
+                    className="img-fluid rounded shadow-sm"
+                    style={{ maxHeight: '65vh', width: 'auto', objectFit: 'contain' }}
+                  />
                 </div>
 
-                <div className="d-flex justify-content-between align-items-center">
-                  <Link
-                    href={`/admin/licenses/${selectedLicense.id}/edit`}
-                    className="btn btn-sm btn-primary"
-                  >
-                    <i className="fas fa-edit me-1"></i> Edit Record
-                  </Link>
-                  <button onClick={() => setSelectedLicense(null)} className="btn btn-sm btn-secondary">
-                    Close
-                  </button>
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
+                  <div className="d-flex gap-2">
+                    <a
+                      href={`/api/admin/licenses/${selectedLicense.id}/card?format=pdf&download=1`}
+                      className="btn btn-sm btn-danger fw-semibold d-flex align-items-center gap-1 shadow-sm px-3"
+                    >
+                      <i className="fas fa-file-pdf"></i>
+                      <span>Download PDF</span>
+                    </a>
+                    <a
+                      href={`/api/admin/licenses/${selectedLicense.id}/card?format=png&download=1`}
+                      className="btn btn-sm btn-success fw-semibold d-flex align-items-center gap-1 shadow-sm px-3"
+                      style={{ backgroundColor: '#0f4c3a', borderColor: '#0f4c3a' }}
+                    >
+                      <i className="fas fa-file-image"></i>
+                      <span>Download PNG</span>
+                    </a>
+                  </div>
+
+                  <div className="d-flex gap-2">
+                    <Link
+                      href={`/admin/licenses/${selectedLicense.id}/edit`}
+                      className="btn btn-sm btn-outline-primary"
+                    >
+                      <i className="fas fa-edit me-1"></i> Edit
+                    </Link>
+                    <button onClick={() => setSelectedLicense(null)} className="btn btn-sm btn-secondary">
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

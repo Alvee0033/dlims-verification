@@ -82,6 +82,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       district: body.district !== undefined ? body.district : existing.district,
       photo_url: body.photo_url ?? existing.photo_url,
       id_card_front_url: body.id_card_front_url !== undefined ? body.id_card_front_url : existing.id_card_front_url,
+      dob: body.dob !== undefined ? body.dob : existing.dob,
+      urdu_name: (body.urdu_name !== undefined ? body.urdu_name : (body.urduName !== undefined ? body.urduName : existing.urdu_name)),
     });
 
     await createActivityLog({

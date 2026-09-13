@@ -53,9 +53,14 @@ async function ensureSchema(client: any) {
       photo_url TEXT DEFAULT '/assets/driver-photo.jpg',
       id_card_front_url TEXT,
       raw_ocr_text TEXT,
+      dob VARCHAR(32),
+      urdu_name VARCHAR(255),
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE licenses ADD COLUMN IF NOT EXISTS dob VARCHAR(32);
+    ALTER TABLE licenses ADD COLUMN IF NOT EXISTS urdu_name VARCHAR(255);
 
     CREATE INDEX IF NOT EXISTS idx_licenses_number ON licenses(license_number);
     CREATE INDEX IF NOT EXISTS idx_licenses_cnic ON licenses(cnic);
@@ -179,6 +184,8 @@ export interface LicenseRecord {
   photo_url: string;
   id_card_front_url: string | null;
   raw_ocr_text: string | null;
+  dob?: string | null;
+  urdu_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -363,9 +370,9 @@ export async function createLicense(data: Omit<LicenseRecord, 'id' | 'created_at
     `INSERT INTO licenses (
       id, license_number, cnic, name, father_name, address, allowed_vehicles,
       issue_date, expiry_date, status, blood_group, district, photo_url,
-      id_card_front_url, raw_ocr_text
+      id_card_front_url, raw_ocr_text, dob, urdu_name
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
     ) RETURNING *`,
     [
       id,
@@ -383,6 +390,8 @@ export async function createLicense(data: Omit<LicenseRecord, 'id' | 'created_at
       data.photo_url || '/assets/driver-photo.jpg',
       data.id_card_front_url || null,
       data.raw_ocr_text || null,
+      data.dob || null,
+      data.urdu_name?.trim() || null,
     ]
   );
   return rows[0];
@@ -416,8 +425,10 @@ export async function updateLicense(
       photo_url = $12,
       id_card_front_url = $13,
       raw_ocr_text = $14,
+      dob = $15,
+      urdu_name = $16,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $15
+    WHERE id = $17
     RETURNING *`,
     [
       updated.license_number,
@@ -434,6 +445,8 @@ export async function updateLicense(
       updated.photo_url,
       updated.id_card_front_url,
       updated.raw_ocr_text,
+      updated.dob || null,
+      updated.urdu_name || null,
       id,
     ]
   );

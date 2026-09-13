@@ -68,6 +68,9 @@ export async function POST(req: NextRequest) {
       photoUrl,
       idCardFrontUrl,
       rawOcrText,
+      dob,
+      urduName,
+      urdu_name,
     } = body;
 
     if (!licenseNumber || !cnic || !name) {
@@ -110,6 +113,8 @@ export async function POST(req: NextRequest) {
       photo_url: photoUrl || '/assets/driver-photo.jpg',
       id_card_front_url: idCardFrontUrl || null,
       raw_ocr_text: rawOcrText || null,
+      dob: dob || null,
+      urdu_name: (urduName || urdu_name)?.trim() || null,
     });
 
     // Write activity log

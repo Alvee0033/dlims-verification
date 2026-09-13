@@ -17,7 +17,9 @@ export interface ParsedLicenseData {
   licenseNumber: string;
   cnic: string;
   name: string;
+  urduName?: string;
   fatherName: string;
+  dob?: string;
   address: string;
   allowedVehicles: string;
   issueDate: string;
@@ -122,9 +124,24 @@ export function parseOcrText(rawText: string): ParsedLicenseData {
   );
   if (expiryKw) extracted.expiryDate = normalizeDate(expiryKw[1]);
 
-  // Positional fallback: dates sorted ascending; first=issue, last=expiry
+  // Date of Birth (ITP wording: "Date of Birth")
+  const dobKw = cleanText.match(
+    /(?:Date\s*of\s*Birth|Birth\s*Date|D\.?O\.?B\.?)[:\s]*(\d{1,2}[-./]\d{1,2}[-./]\d{4}|\d{4}[-./]\d{1,2}[-./]\d{1,2})/i
+  );
+  if (dobKw) extracted.dob = normalizeDate(dobKw[1]);
+
+  // Positional fallback: dates sorted ascending
   if (!extracted.issueDate && foundDates.length >= 1) extracted.issueDate = foundDates[0];
   if (!extracted.expiryDate && foundDates.length >= 2) extracted.expiryDate = foundDates[foundDates.length - 1];
+
+  // Urdu name extraction from raw text if present
+  const urduMatch = rawText.match(/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF\s]{3,50}/);
+  if (urduMatch) {
+    const candidateUrdu = urduMatch[0].trim();
+    if (candidateUrdu.length >= 3) {
+      extracted.urduName = candidateUrdu;
+    }
+  }
 
   // ────────────────────────────────────────────────
   // 4. Name
@@ -285,7 +302,9 @@ export function parseOcrText(rawText: string): ParsedLicenseData {
     licenseNumber: extracted.licenseNumber || '',
     cnic: extracted.cnic || '',
     name: extracted.name || '',
+    urduName: extracted.urduName || '',
     fatherName: extracted.fatherName || '',
+    dob: extracted.dob || '',
     address: extracted.address || '',
     allowedVehicles: extracted.allowedVehicles || 'M/Cycle, M/Car',
     issueDate: extracted.issueDate || '',
