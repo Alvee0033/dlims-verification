@@ -177,20 +177,30 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     if urdu_name and font_urdu_path:
         try:
             f_urdu = ImageFont.truetype(font_urdu_path, 46)
+            drawn = False
             try:
-                draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK, direction="rtl", language="urd", anchor="ra")
+                from PIL import features
+                if features.check("raqm"):
+                    draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK, direction="rtl", language="urd", anchor="ra")
+                    drawn = True
             except Exception:
+                pass
+
+            if not drawn:
+                try:
+                    import arabic_reshaper
+                    from bidi.algorithm import get_display
+                    bidi_text = get_display(arabic_reshaper.reshape(urdu_name))
+                    draw.text((1440, 378), bidi_text, font=f_urdu, fill=DARK, anchor="ra")
+                    drawn = True
+                except Exception:
+                    pass
+
+            if not drawn:
                 try:
                     draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK, anchor="ra")
                 except Exception:
-                    try:
-                        import arabic_reshaper
-                        from bidi.algorithm import get_display
-                        reshaped_text = arabic_reshaper.reshape(urdu_name)
-                        bidi_text = get_display(reshaped_text)
-                        draw.text((1440, 378), bidi_text, font=f_urdu, fill=DARK, anchor="ra")
-                    except Exception:
-                        draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK)
+                    draw.text((1440, 378), urdu_name, font=f_urdu, fill=DARK)
         except Exception as e:
             sys.stderr.write(f"Urdu text rendering error: {e}\n")
 

@@ -365,7 +365,7 @@ export default function LicenseDirectoryPage() {
                 {/* Auto-Generated Card Display */}
                 <div className="mb-3 text-center position-relative bg-dark bg-opacity-10 rounded-3 p-2 border">
                   <img
-                    src={`/api/admin/licenses/${selectedLicense.id}/card`}
+                    src={`/api/admin/licenses/${selectedLicense.id}/card?v=${encodeURIComponent(selectedLicense.updated_at || Date.now())}`}
                     alt={`License Card - ${selectedLicense.name}`}
                     className="img-fluid rounded shadow-sm"
                     style={{ maxHeight: '65vh', width: 'auto', objectFit: 'contain' }}
