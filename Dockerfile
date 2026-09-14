@@ -5,14 +5,13 @@ RUN apk add --no-cache \
     tesseract-ocr-data-eng \
     libc6-compat \
     python3 \
-    py3-pillow \
     py3-pip \
     py3-qrcode \
     font-noto \
     fribidi \
     harfbuzz \
     libraqm \
-    && pip install --no-cache-dir --break-system-packages python-barcode
+    && pip install --no-cache-dir --break-system-packages pillow python-barcode
 
 WORKDIR /app
 
