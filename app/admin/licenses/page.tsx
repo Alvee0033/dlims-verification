@@ -18,6 +18,7 @@ interface License {
   district: string | null;
   photo_url: string;
   created_at: string;
+  updated_at?: string | null;
 }
 
 export default function LicenseDirectoryPage() {
