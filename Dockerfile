@@ -6,12 +6,12 @@ RUN apk add --no-cache \
     libc6-compat \
     python3 \
     py3-pip \
-    py3-qrcode \
     font-noto \
     fribidi \
     harfbuzz \
     libraqm \
-    && pip install --no-cache-dir --break-system-packages pillow python-barcode
+    && pip install --no-cache-dir --break-system-packages --upgrade --force-reinstall pillow \
+    && pip install --no-cache-dir --break-system-packages qrcode python-barcode
 
 WORKDIR /app
 
