@@ -1,6 +1,8 @@
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
+import fs from 'fs/promises';
 import { createInterface } from 'readline';
+import { getUploadedFile } from '@/lib/db';
 
 export interface CardData {
   name: string;
@@ -151,12 +153,91 @@ function getDaemon(): Promise<ChildProcess | null> {
   });
 }
 
+// ─── Resolve Image (Disk / Database / Data URI) ──────────────────────────
+async function resolveImageInput(inputUrl?: string | null): Promise<string | null> {
+  if (!inputUrl || !inputUrl.trim()) return null;
+  const str = inputUrl.trim();
+  if (str.startsWith('data:image/')) return str;
+
+  // Extract filename if it references /uploads/
+  let filename = '';
+  if (str.includes('/uploads/')) {
+    filename = str.split('/uploads/')[1]?.split('?')[0]?.split('#')[0] || '';
+  } else if (!str.startsWith('http://') && !str.startsWith('https://')) {
+    filename = str.replace(/^\/?(public\/)?uploads\//, '').replace(/^\/+/, '');
+  }
+
+  if (filename) {
+    const diskPath = path.join(process.cwd(), 'public', 'uploads', filename);
+    // 1. Check if on disk
+    try {
+      await fs.access(diskPath);
+      return diskPath;
+    } catch {
+      // Not on disk
+    }
+
+    // 2. Fetch from database uploaded_files table
+    try {
+      const dbFile = await getUploadedFile(filename);
+      if (dbFile && dbFile.data) {
+        try {
+          await fs.mkdir(path.dirname(diskPath), { recursive: true });
+          await fs.writeFile(diskPath, dbFile.data);
+          return diskPath;
+        } catch {
+          // If write fails, return data URI directly
+          const b64 = Buffer.isBuffer(dbFile.data)
+            ? dbFile.data.toString('base64')
+            : Buffer.from(dbFile.data).toString('base64');
+          return `data:${dbFile.mime_type || 'image/jpeg'};base64,${b64}`;
+        }
+      }
+    } catch (e) {
+      console.warn('[card-generator] DB lookup error for upload:', filename, e);
+    }
+  }
+
+  // 3. Fallback for external HTTP/HTTPS URL
+  if (str.startsWith('http://') || str.startsWith('https://')) {
+    try {
+      const res = await fetch(str, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const arr = await res.arrayBuffer();
+        const buf = Buffer.from(arr);
+        const ct = res.headers.get('content-type') || 'image/jpeg';
+        return `data:${ct};base64,${buf.toString('base64')}`;
+      }
+    } catch (e) {
+      console.warn('[card-generator] HTTP fetch failed for image:', str, e);
+    }
+  }
+
+  return str;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 export async function generateCardBuffer(
   data: CardData,
   format: 'png' | 'pdf' = 'png',
   preview: boolean = false
 ): Promise<Buffer> {
+  const photoRaw = data.photoUrl || data.photo_url;
+  const signatureRaw = data.signatureUrl || data.signature_url;
+
+  const [resolvedPhoto, resolvedSignature] = await Promise.all([
+    resolveImageInput(photoRaw),
+    resolveImageInput(signatureRaw),
+  ]);
+
+  const resolvedData: CardData = {
+    ...data,
+    photoUrl: resolvedPhoto,
+    photo_url: resolvedPhoto,
+    signatureUrl: resolvedSignature,
+    signature_url: resolvedSignature,
+  };
+
   try {
     const proc = await getDaemon();
     if (proc && daemonState.ready) {
@@ -182,7 +263,7 @@ export async function generateCardBuffer(
           },
         });
 
-        const payload = JSON.stringify({ ...data, format, preview }) + '\n';
+        const payload = JSON.stringify({ ...resolvedData, format, preview }) + '\n';
         proc.stdin!.write(payload);
       });
     }
@@ -191,5 +272,5 @@ export async function generateCardBuffer(
   }
 
   // Fallback to direct script execution
-  return runDirectScript(data, format);
+  return runDirectScript(resolvedData, format);
 }

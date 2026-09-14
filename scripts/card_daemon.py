@@ -93,18 +93,38 @@ def _load_image_input(img_input):
             return Image.open(BytesIO(data_bytes))
         except Exception:
             pass
+
     clean_p = input_str.lstrip("/")
     candidates = [
         input_str,
         os.path.join(BASE_DIR, clean_p),
         os.path.join(BASE_DIR, "public", clean_p),
     ]
+
+    if "uploads/" in input_str:
+        fname = input_str.split("uploads/")[-1].split("?")[0].split("#")[0].strip().lstrip("/")
+        candidates.extend([
+            os.path.join(BASE_DIR, "public", "uploads", fname),
+            os.path.join(BASE_DIR, "uploads", fname),
+            os.path.join("/app", "public", "uploads", fname),
+            fname,
+        ])
+
     for pp in candidates:
         if os.path.exists(pp) and os.path.isfile(pp):
             try:
                 return Image.open(pp)
             except Exception:
                 pass
+
+    if input_str.startswith("http://") or input_str.startswith("https://"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(input_str, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                return Image.open(BytesIO(resp.read()))
+        except Exception:
+            pass
 
     return None
 
