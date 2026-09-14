@@ -12,7 +12,7 @@ RUN apk add --no-cache \
     fribidi \
     harfbuzz \
     libraqm \
-    && pip install --no-cache-dir --break-system-packages python-barcode arabic-reshaper python-bidi
+    && pip install --no-cache-dir --break-system-packages python-barcode
 
 WORKDIR /app
 

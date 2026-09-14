@@ -240,26 +240,9 @@ def generate_card(data, output_format="png", preview=False):
 
     # 2. Urdu name (x=1440, y=378)
     if urdu_name and fonts["urdu"]:
-        drawn = False
         try:
-            from PIL import features
-            if features.check("raqm"):
-                draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, direction="rtl", language="urd", anchor="ra")
-                drawn = True
+            draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, direction="rtl", language="urd", anchor="ra")
         except Exception:
-            pass
-
-        if not drawn:
-            try:
-                import arabic_reshaper
-                from bidi.algorithm import get_display
-                bidi_text = get_display(arabic_reshaper.reshape(urdu_name))
-                draw.text((s(1440), s(378)), bidi_text, font=fonts["urdu"], fill=DARK, anchor="ra")
-                drawn = True
-            except Exception:
-                pass
-
-        if not drawn:
             try:
                 draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, anchor="ra")
             except Exception:
