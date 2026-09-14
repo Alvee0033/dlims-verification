@@ -218,12 +218,21 @@ def generate_card(data, output_format="png", preview=False):
     # 1b. Driver signature (exact sign box below photo)
     paste_signature(template, signature_input, scale)
 
-    # 2. Urdu name (safe right boundary at s(1500), expands to the left, y=378)
+    # 2. Urdu name (x=1440, y=378)
     if urdu_name and fonts["urdu"]:
         try:
-            draw.text((s(1500), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, direction="rtl", language="urd", anchor="ra")
-        except Exception as e:
-            sys.stderr.write(f"Urdu text error: {e}\n")
+            draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, direction="rtl", language="urd", anchor="ra")
+        except Exception:
+            try:
+                draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK, anchor="ra")
+            except Exception:
+                try:
+                    import arabic_reshaper
+                    from bidi.algorithm import get_display
+                    bidi_text = get_display(arabic_reshaper.reshape(urdu_name))
+                    draw.text((s(1440), s(378)), bidi_text, font=fonts["urdu"], fill=DARK, anchor="ra")
+                except Exception:
+                    draw.text((s(1440), s(378)), urdu_name, font=fonts["urdu"], fill=DARK)
 
     # 3. English name
     if fonts["name"] and english_name:
