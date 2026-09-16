@@ -113,7 +113,7 @@ async function ensureSchema(client: any) {
       '${realHash}',
       'Director General DLIMS',
       'SUPERADMIN'
-    ) ON CONFLICT (email) DO UPDATE SET password_hash = '${realHash}';
+    ) ON CONFLICT (id) DO UPDATE SET password_hash = '${realHash}', email = 'admin@dlims.gov.pk';
   `);
 
     // Seed initial license records so the system is ready immediately
