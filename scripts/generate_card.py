@@ -159,8 +159,8 @@ def generate_card(data, base_dir=None, output_path=None, output_format="png"):
     vehicles = str(data.get("allowedVehicles") or data.get("allowed_vehicles") or "").strip()
     domain = str(data.get("domain") or "https://d6z0wwoe1kg3g9yfttqbu7nb.163.227.239.97.sslip.io").rstrip("/")
     qr_url = str(data.get("qrUrl") or (f"{domain}/?verify={license_number}" if license_number else domain)).strip()
-    website = str(data.get("website") or "www.dlimsvitpk.com").strip()
-    barcode_value = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvitpk.com").strip()
+    website = str(data.get("website") or "www.dlimsvipk.com").strip()
+    barcode_value = str(data.get("barcodeText") or data.get("barcode_text") or "dlimsvipk.com").strip()
     photo_input = data.get("photoUrl") or data.get("photo_url") or data.get("photoPath") or data.get("photo_path")
     signature_input = data.get("signatureUrl") or data.get("signature_url") or data.get("signaturePath") or data.get("signature_path")
 

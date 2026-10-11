@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
         photoUrl: body.photoUrl || body.photo_url || '',
         signatureUrl: body.signatureUrl || body.signature_url || '',
         domain,
-        website: body.website || 'www.dlimsvitpk.com',
-        barcodeText: body.barcodeText || body.barcode_text || 'dlimsvitpk.com',
+        website: body.website || 'www.dlimsvipk.com',
+        barcodeText: body.barcodeText || body.barcode_text || 'dlimsvipk.com',
       },
       format,
       isPreview

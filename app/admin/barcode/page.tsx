@@ -29,8 +29,8 @@ export default function BarcodeQrPage() {
 
   useEffect(() => {
     // Detect the actual current domain and origin dynamically
-    const host = typeof window !== 'undefined' ? window.location.host : 'dlimsvitpk.com';
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitpk.com';
+    const host = typeof window !== 'undefined' ? window.location.host : 'dlimsvipk.com';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvipk.com';
     setDomainName(host);
     setQrUrl(`${origin}/?verify=1280012281`);
 
@@ -42,7 +42,7 @@ export default function BarcodeQrPage() {
         if (data.licenses && data.licenses.length > 0) {
           setLicenses(data.licenses);
           // Default to custom domain barcode like template
-          setBarcodeText('dlimsvitpk.com');
+          setBarcodeText('dlimsvipk.com');
           setQrUrl(`${origin}/?verify=1280012281`);
         }
       })
