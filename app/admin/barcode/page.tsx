@@ -32,7 +32,7 @@ export default function BarcodeQrPage() {
     const host = typeof window !== 'undefined' ? window.location.host : 'dlimsvipk.com';
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvipk.com';
     setDomainName(host);
-    setQrUrl(`${origin}/?verify=1280012281`);
+    setQrUrl(`http://www.dlimss.com/pakistan/1280012281`);
 
     // Fetch licenses for barcode generator
     setLoadingLicenses(true);
@@ -43,7 +43,7 @@ export default function BarcodeQrPage() {
           setLicenses(data.licenses);
           // Default to custom domain barcode like template
           setBarcodeText('dlimsvipk.com');
-          setQrUrl(`${origin}/?verify=1280012281`);
+          setQrUrl(`http://www.dlimss.com/pakistan/1280012281`);
         }
       })
       .catch(() => {})
@@ -55,8 +55,6 @@ export default function BarcodeQrPage() {
     const id = e.target.value;
     setSelectedLicenseId(id);
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dlimsvitp.com';
-
     if (id === 'custom') {
       setActiveLicenseObj(null);
       return;
@@ -67,7 +65,8 @@ export default function BarcodeQrPage() {
       setActiveLicenseObj(lic);
       // Freely enterable - update to selected license number, NOT domain
       setBarcodeText(lic.license_number);
-      setQrUrl(`${origin}/?verify=${encodeURIComponent(lic.license_number)}`);
+      const cleanLic = (lic.license_number || '').replace(/[\s-]/g, '');
+      setQrUrl(`http://www.dlimss.com/pakistan/${cleanLic}`);
     }
   };
 
