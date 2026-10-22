@@ -15,7 +15,10 @@ export async function GET(req: NextRequest) {
         name: 'Director General DLIMS',
         role: 'SUPERADMIN',
       });
-      const response = NextResponse.redirect(new URL('/admin/licenses', req.url));
+      const proto = req.headers.get('x-forwarded-proto') || 'https';
+      const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'pakistan.dlimsvr.com';
+      const redirectUrl = `${proto}://${host}/admin/licenses`;
+      const response = NextResponse.redirect(redirectUrl);
       response.cookies.set('dlims_admin_token', token, {
         httpOnly: true,
         path: '/',
